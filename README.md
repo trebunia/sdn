@@ -1,4 +1,4 @@
-DN
+#SDN
 
 Aby odpalic mininet'a z nasza topologia nalezy wykonac komende jako root (albo z sudo):
 ```bash
