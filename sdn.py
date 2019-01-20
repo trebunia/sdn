@@ -6,9 +6,18 @@ from mininet.util import dumpNodeConnections
 from mininet.log import setLogLevel
 from mininet.node import RemoteController
 from mininet.cli import CLI
+from random import randint
 import sys
 import subprocess
 import os.path
+import signal
+
+
+def signal_handler(sig, frame):
+        print('You pressed Ctrl+C!')
+        net.stop()
+        sys.exit(0)
+
 
 ControllerIP='192.168.56.1'
 
@@ -41,9 +50,25 @@ class TopoSDN(Topo):
 	self.addLink(switches[2], switches[4])
 	self.addLink(switches[2], switches[5])
 
+def gentraffic(self, line):
+    "generate random http traffic\nUsage: gentraffic [number_of_flows]"
+    net = self.mn
+    for i in range(int(line)):
+        sips = [ s for s in net.get('sv1', 'sv2', 'sv3') ]
+        hips = [ h for h in net.get('h1', 'h2', 'h3') ]
+        dst = randint(0,len(sips)-1)
+        src = randint(0,len(hips)-1)
+        timeout = randint(1,60)
+        bandwidth = randint(100, 50000)
+        hips[src].cmd('timeout -s KILL {} wget --limit-rate={}K {}/file -O - > /dev/null &'.format(timeout, bandwidth, sips[dst].IP()) )
+        print "creating flow from {} to {} - bandwidth {}, timeout {}".format(hips[src].IP(), sips[dst].IP(), bandwidth,timeout)
+
+
+
 def simpleTest(controllerip):
+    signal.signal(signal.SIGINT, signal_handler)
     if not os.path.isfile("./file"):
-        subprocess.call(["dd", "if=/dev/zero", "of=./file", "bs=1M", "count=100"])
+        subprocess.call(["dd", "if=/dev/zero", "of=./file", "bs=1M", "count=500"])
     topo = TopoSDN()
     net = Mininet(topo, controller=RemoteController( 'c0', ip=controllerip, port=6653 ))
     net.start()
@@ -51,6 +76,7 @@ def simpleTest(controllerip):
     sv1.cmd('python -m SimpleHTTPServer 80 &')
     sv2.cmd('python -m SimpleHTTPServer 80 &')
     sv3.cmd('python -m SimpleHTTPServer 80 &')
+    CLI.do_gentraffic = gentraffic
     CLI(net)
     net.stop()
 
