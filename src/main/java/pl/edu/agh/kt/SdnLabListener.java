@@ -51,7 +51,7 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 		PacketExtractor extractor = new PacketExtractor();
 		extractor.packetExtract(cntx);
 
-		// TODO
+		StatisticsCollector.getInstance(sw);
 		OFPacketIn pin = (OFPacketIn) msg;
 		OFPort outPort = OFPort.of(0);
 		if (pin.getInPort() == OFPort.of(1)) {
