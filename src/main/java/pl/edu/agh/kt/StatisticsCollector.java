@@ -21,8 +21,10 @@ public class StatisticsCollector {
 
 	private static final Logger logger = LoggerFactory.getLogger(StatisticsCollector.class);
 	private IOFSwitch sw;
-
 	public class PortStatisticsPoller extends TimerTask {
+	//	public long bytesInThisInterval = 0;
+	//	public long previousBytes = 0;
+	//	public long currentBytes = 0;
 		private final Logger logger	= LoggerFactory.getLogger(PortStatisticsPoller.class);
 		private static final int TIMEOUT = PORT_STATISTICS_POLLING_INTERVAL	/ 2;
 		@Override
@@ -46,8 +48,11 @@ public class StatisticsCollector {
 					OFPortStatsReply psr = (OFPortStatsReply) values.get(0);
 					for (OFPortStatsEntry pse :	psr.getEntries()) {
 						if (pse.getPortNo().getPortNumber() > 0) {
+//							currentBytes = pse.getTxBytes().getValue();
+//							bytesInThisInterval = currentBytes - previousBytes;
 							logger.info("switch desc: {}", sw.getId().toString());
 							logger.info("port number: {} TxBytes: {} ", pse.getPortNo().getPortNumber(), pse.getTxBytes().getValue());
+							// previousBytes = currentBytes;
 						/* 
 						 * Jako że te bajty się sumują to trzeba zrobić coś w rodzaju: 
 						 * bandwidth = 1000000*(current_bytes - previous_bytes)/ (PORT_STATISTICS_POLLING_INTERVAL/1000)
@@ -66,8 +71,7 @@ public class StatisticsCollector {
 			logger.debug("run() end");
 		}
 	}
-	public static final int	PORT_STATISTICS_POLLING_INTERVAL = 1000; // in ms
-	private	static StatisticsCollector singleton;
+	public static final int	PORT_STATISTICS_POLLING_INTERVAL = 10000; // in ms
 
 	private StatisticsCollector(IOFSwitch sw) {
 		this.sw	= sw;
