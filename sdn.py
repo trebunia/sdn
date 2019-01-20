@@ -13,12 +13,6 @@ import os.path
 import signal
 
 
-def signal_handler(sig, frame):
-        print('You pressed Ctrl+C!')
-        net.stop()
-        sys.exit(0)
-
-
 ControllerIP='192.168.56.1'
 
 class TopoSDN(Topo):
@@ -66,7 +60,6 @@ def gentraffic(self, line):
 
 
 def simpleTest(controllerip):
-    signal.signal(signal.SIGINT, signal_handler)
     if not os.path.isfile("./file"):
         subprocess.call(["dd", "if=/dev/zero", "of=./file", "bs=1M", "count=500"])
     topo = TopoSDN()
@@ -76,6 +69,7 @@ def simpleTest(controllerip):
     sv1.cmd('python -m SimpleHTTPServer 80 &')
     sv2.cmd('python -m SimpleHTTPServer 80 &')
     sv3.cmd('python -m SimpleHTTPServer 80 &')
+#    flows(net)
     CLI.do_gentraffic = gentraffic
     CLI(net)
     net.stop()
