@@ -46,6 +46,7 @@ public class StatisticsCollector {
 					OFPortStatsReply psr = (OFPortStatsReply) values.get(0);
 					for (OFPortStatsEntry pse :	psr.getEntries()) {
 						if (pse.getPortNo().getPortNumber() > 0) {
+							logger.info("switch desc: {}", sw.getId().toString());
 							logger.info("port number: {} TxBytes: {} ", pse.getPortNo().getPortNumber(), pse.getTxBytes().getValue());
 						/* 
 						 * Jako że te bajty się sumują to trzeba zrobić coś w rodzaju: 
@@ -73,7 +74,7 @@ public class StatisticsCollector {
 		new Timer().scheduleAtFixedRate(new PortStatisticsPoller(), 0, PORT_STATISTICS_POLLING_INTERVAL);
 	}
 	public static StatisticsCollector getInstance(IOFSwitch sw) {
-		logger.debug("getInstance() begin");
+/*		logger.debug("getInstance() begin {}", sw.getId().toString());
 		synchronized (StatisticsCollector.class) {
 			if (singleton == null) {
 				logger.debug("Creating StatisticsCollector singleton");
@@ -82,5 +83,8 @@ public class StatisticsCollector {
 		}
 		logger.debug("getInstance() end");
 		return singleton;
+	}
+	*/
+		return new	StatisticsCollector(sw);
 	}
 }
