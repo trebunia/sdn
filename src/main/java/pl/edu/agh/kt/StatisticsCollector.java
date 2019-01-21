@@ -22,9 +22,16 @@ public class StatisticsCollector {
 	private static final Logger logger = LoggerFactory.getLogger(StatisticsCollector.class);
 	private IOFSwitch sw;
 	public class PortStatisticsPoller extends TimerTask {
-	//	public long bytesInThisInterval = 0;
-	//	public long previousBytes = 0;
-	//	public long currentBytes = 0;
+	    private long[] bytesInThisInterval = new long[4];
+	    private long[] previousBytes = new long[4];
+	    private long[] currentBytes= new long[4];
+	    private long[] bandwidth = new long[4];
+//	    public long bytesInThisInterval2 = 0;
+//	    public long previousBytes2 = 0;
+//	    public long currentBytes2 = 0;
+//	    public long bytesInThisInterval3 = 0;
+//	    public long previousBytes3 = 0;
+//	    public long currentBytes3 = 0;
 		private final Logger logger	= LoggerFactory.getLogger(PortStatisticsPoller.class);
 		private static final int TIMEOUT = PORT_STATISTICS_POLLING_INTERVAL	/ 2;
 		@Override
@@ -47,12 +54,14 @@ public class StatisticsCollector {
 					}
 					OFPortStatsReply psr = (OFPortStatsReply) values.get(0);
 					for (OFPortStatsEntry pse :	psr.getEntries()) {
+						int portNumber = pse.getPortNo().getPortNumber() - 1;
 						if (pse.getPortNo().getPortNumber() > 0) {
-//							currentBytes = pse.getTxBytes().getValue();
-//							bytesInThisInterval = currentBytes - previousBytes;
+							currentBytes[portNumber] = pse.getTxBytes().getValue();
+							bytesInThisInterval[portNumber] = currentBytes[portNumber] - previousBytes[portNumber];
+							bandwidth[portNumber] =  (bytesInThisInterval[portNumber] / (PORT_STATISTICS_POLLING_INTERVAL/10000)) / 1000000;
 							logger.info("switch desc: {}", sw.getId().toString());
-							logger.info("port number: {} TxBytes: {} ", pse.getPortNo().getPortNumber(), pse.getTxBytes().getValue());
-							// previousBytes = currentBytes;
+							logger.info("port number: {} bandwidth: {} ", pse.getPortNo().getPortNumber(), bandwidth[portNumber]);
+							previousBytes[portNumber] = currentBytes[portNumber];
 						/* 
 						 * Jako że te bajty się sumują to trzeba zrobić coś w rodzaju: 
 						 * bandwidth = 1000000*(current_bytes - previous_bytes)/ (PORT_STATISTICS_POLLING_INTERVAL/1000)
