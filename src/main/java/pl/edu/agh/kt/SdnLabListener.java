@@ -48,8 +48,8 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 			FloodlightContext cntx) {
 
 		logger.info("************* NEW PACKET IN *************");
-		PacketExtractor extractor = new PacketExtractor();
-		extractor.packetExtract(cntx);
+//		PacketExtractor extractor = new PacketExtractor();
+//		extractor.packetExtract(cntx);
 		
 		// Marcin: 
 		
@@ -66,15 +66,15 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 		// domyślnie:
 		// StatisticsCollector.getInstance(sw);
 		
-		OFPacketIn pin = (OFPacketIn) msg;
-		OFPort outPort = OFPort.of(0);
-		if (pin.getInPort() == OFPort.of(1)) {
-			outPort = OFPort.of(2);
-		} else
-			outPort = OFPort.of(1);
-		Flows.simpleAdd(sw, pin, cntx, outPort);
-		
-		return Command.STOP;
+//		OFPacketIn pin = (OFPacketIn) msg;
+//		OFPort outPort = OFPort.of(0);
+//		if (pin.getInPort() == OFPort.of(1)) {
+//			outPort = OFPort.of(2);
+//		} else
+//			outPort = OFPort.of(1);
+//		Flows.simpleAdd(sw, pin, cntx, outPort);
+		// return Command.STOP;
+		return Command.CONTINUE;
 	}
 
 	@Override
