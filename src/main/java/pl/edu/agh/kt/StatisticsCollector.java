@@ -58,19 +58,10 @@ public class StatisticsCollector {
 						if (pse.getPortNo().getPortNumber() > 0) {
 							currentBytes[portNumber] = pse.getTxBytes().getValue();
 							bytesInThisInterval[portNumber] = currentBytes[portNumber] - previousBytes[portNumber];
-							bandwidth[portNumber] =  (bytesInThisInterval[portNumber] / (PORT_STATISTICS_POLLING_INTERVAL/10000)) / 1000000;
+							bandwidth[portNumber] =  (bytesInThisInterval[portNumber] / (PORT_STATISTICS_POLLING_INTERVAL/1000)) / 1000; //bajty na sekundę (nawias) przez 1000 a więc KB
 							logger.info("switch desc: {}", sw.getId().toString());
 							logger.info("port number: {} bandwidth: {} ", pse.getPortNo().getPortNumber(), bandwidth[portNumber]);
 							previousBytes[portNumber] = currentBytes[portNumber];
-						/* 
-						 * Jako że te bajty się sumują to trzeba zrobić coś w rodzaju: 
-						 * bandwidth = 1000000*(current_bytes - previous_bytes)/ (PORT_STATISTICS_POLLING_INTERVAL/1000)
-						 * dzielone przez 1000 bo interwał jest w milisekundach, razy 1000000 żeby z bajtów zrobić MB
-						 * Problem - trzeba to zrobić dla każdego portu ktory nas interesuje, wiec pewnie current_bytes i previous_bytes to
-						 * muszą być tablice - nie mam najmniejszego pojęcia jak sobie z tym poradzić w Javie
-						 * Być może trzeba wpisać każdy switch/port ręcznie, w tym momencie jest tutaj for po jakichś odpowiedziach otrzymanych z portów ?
-						 * 
-							*/
 						}
 					}
 				} catch (InterruptedException | ExecutionException | TimeoutException ex) {
@@ -80,7 +71,7 @@ public class StatisticsCollector {
 			logger.debug("run() end");
 		}
 	}
-	public static final int	PORT_STATISTICS_POLLING_INTERVAL = 10000; // in ms
+	public static final int	PORT_STATISTICS_POLLING_INTERVAL = 5000; // in ms
 	private static StatisticsCollector stats1;
 	private static StatisticsCollector stats2;
 	private static StatisticsCollector stats3;
