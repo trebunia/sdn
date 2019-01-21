@@ -50,13 +50,22 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 		logger.info("************* NEW PACKET IN *************");
 		PacketExtractor extractor = new PacketExtractor();
 		extractor.packetExtract(cntx);
+		
 		// Marcin: 
-		if (sw.getId().toString().equals("00:00:00:00:00:00:00:01") || sw.getId().toString().equals("00:00:00:00:00:00:00:02") || sw.getId().toString().equals("00:00:00:00:00:00:00:03") ) {
+		
+		if (sw.getId().toString().equals("00:00:00:00:00:00:00:01")) {
+			StatisticsCollector.getInstance(sw);
+			logger.info("Switch id: {}", sw.getId().toString());
+		} else if(sw.getId().toString().equals("00:00:00:00:00:00:00:02")) {
+			StatisticsCollector.getInstance(sw);
+			logger.info("Switch id: {}", sw.getId().toString());
+		} else if(sw.getId().toString().equals("00:00:00:00:00:00:00:03")) {
 			StatisticsCollector.getInstance(sw);
 			logger.info("Switch id: {}", sw.getId().toString());
 		}
 		// domyślnie:
 		// StatisticsCollector.getInstance(sw);
+		
 		OFPacketIn pin = (OFPacketIn) msg;
 		OFPort outPort = OFPort.of(0);
 		if (pin.getInPort() == OFPort.of(1)) {
@@ -64,7 +73,7 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 		} else
 			outPort = OFPort.of(1);
 		Flows.simpleAdd(sw, pin, cntx, outPort);
-
+		
 		return Command.STOP;
 	}
 

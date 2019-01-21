@@ -72,23 +72,44 @@ public class StatisticsCollector {
 		}
 	}
 	public static final int	PORT_STATISTICS_POLLING_INTERVAL = 10000; // in ms
-
+	private static StatisticsCollector stats1;
+	private static StatisticsCollector stats2;
+	private static StatisticsCollector stats3;
+	private static StatisticsCollector stats;
+	;
 	private StatisticsCollector(IOFSwitch sw) {
 		this.sw	= sw;
 		new Timer().scheduleAtFixedRate(new PortStatisticsPoller(), 0, PORT_STATISTICS_POLLING_INTERVAL);
 	}
 	public static StatisticsCollector getInstance(IOFSwitch sw) {
-/*		logger.debug("getInstance() begin {}", sw.getId().toString());
-		synchronized (StatisticsCollector.class) {
-			if (singleton == null) {
-				logger.debug("Creating StatisticsCollector singleton");
-				singleton = new	StatisticsCollector(sw);
+		logger.debug("getInstance() begin {}", sw.getId().toString());
+		if(sw.getId().toString().equals("00:00:00:00:00:00:00:01")){
+			synchronized (StatisticsCollector.class) {
+				if (stats1 == null) {
+					stats1 = new StatisticsCollector(sw);
+				}
 			}
+			logger.debug("ABCD stats1");
+			stats = stats1;
+		} else if(sw.getId().toString().equals("00:00:00:00:00:00:00:02")) {
+			synchronized (StatisticsCollector.class) {
+				if (stats2 == null) {
+					stats2 = new StatisticsCollector(sw);
+				}
+			}
+			logger.debug("ABCD stats2");
+			stats = stats2;
+		} else if(sw.getId().toString().equals("00:00:00:00:00:00:00:03")) {
+			synchronized (StatisticsCollector.class) {
+				if (stats3 == null) {
+					logger.debug("ABCD stats3");
+					stats3 = new StatisticsCollector(sw);
+				}
+			}
+			logger.debug("ABCD stats3");
+			stats = stats3;
 		}
 		logger.debug("getInstance() end");
-		return singleton;
-	}
-	*/
-		return new	StatisticsCollector(sw);
+		return stats;
 	}
 }
