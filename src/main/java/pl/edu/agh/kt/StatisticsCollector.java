@@ -59,6 +59,20 @@ public class StatisticsCollector {
 							bandwidth =  (bytesInThisIntervalReceived / (PORT_STATISTICS_POLLING_INTERVAL/1000)) / 1000; //bajty na sekundę (nawias) przez 1000 a więc KB
 							logger.info("switch desc: {}", sw.getId().toString());
 							logger.info("port number: {} bandwidth: {} ", pse.getPortNo().getPortNumber(), bandwidth);
+
+							if (sw.getId().toString().equals("00:00:00:00:00:00:00:01")) {
+								bandwidths[0] = bandwidth;
+							} else if(sw.getId().toString().equals("00:00:00:00:00:00:00:02")) {
+								bandwidths[1] = bandwidth;
+							} else if(sw.getId().toString().equals("00:00:00:00:00:00:00:03")) {
+								bandwidths[2] = bandwidth;
+							} else {
+								logger.error("run() unexected switch address!");
+								return;
+							}
+
+
+
 							previousBytesReceived = currentBytesReceived;
 						}
 //						int portNumber = pse.getPortNo().getPortNumber() - 1;
@@ -79,44 +93,51 @@ public class StatisticsCollector {
 		}
 	}
 	public static final int	PORT_STATISTICS_POLLING_INTERVAL = 5000; // in ms
-	private static StatisticsCollector stats1;
-	private static StatisticsCollector stats2;
-	private static StatisticsCollector stats3;
-	private static StatisticsCollector stats;
-	;
+	private static StatisticsCollector statscollector1;
+	private static StatisticsCollector statscollector2;
+	private static StatisticsCollector statscollector3;
+	private static float[] bandwidths = new float[] {0,0,0};
+
 	private StatisticsCollector(IOFSwitch sw) {
 		this.sw	= sw;
 		new Timer().scheduleAtFixedRate(new PortStatisticsPoller(), 0, PORT_STATISTICS_POLLING_INTERVAL);
 	}
+
 	public static StatisticsCollector getInstance(IOFSwitch sw) {
+		StatisticsCollector stats = null;
 		logger.debug("getInstance() begin {}", sw.getId().toString());
 		if(sw.getId().toString().equals("00:00:00:00:00:00:00:01")){
 			synchronized (StatisticsCollector.class) {
-				if (stats1 == null) {
-					stats1 = new StatisticsCollector(sw);
+				if (statscollector1 == null) {
+					statscollector1 = new StatisticsCollector(sw);
 				}
 			}
-			logger.debug("ABCD stats1");
-			stats = stats1;
+			logger.debug("ABCD statscollector1");
+			stats = statscollector1;
 		} else if(sw.getId().toString().equals("00:00:00:00:00:00:00:02")) {
 			synchronized (StatisticsCollector.class) {
-				if (stats2 == null) {
-					stats2 = new StatisticsCollector(sw);
+				if (statscollector2 == null) {
+					statscollector2 = new StatisticsCollector(sw);
 				}
 			}
-			logger.debug("ABCD stats2");
-			stats = stats2;
+			logger.debug("ABCD statscollector2");
+			stats = statscollector2;
 		} else if(sw.getId().toString().equals("00:00:00:00:00:00:00:03")) {
 			synchronized (StatisticsCollector.class) {
-				if (stats3 == null) {
-					logger.debug("ABCD stats3");
-					stats3 = new StatisticsCollector(sw);
+				if (statscollector3 == null) {
+					logger.debug("ABCD statscollector3");
+					statscollector3 = new StatisticsCollector(sw);
 				}
 			}
-			logger.debug("ABCD stats3");
-			stats = stats3;
+			logger.debug("ABCD statscollector3");
+			stats = statscollector3;
 		}
 		logger.debug("getInstance() end");
 		return stats;
+	}
+
+	public static float[] getBandwidths() {
+		logger.warn("Sending statistics to SdnLabListener");
+		return bandwidths;
 	}
 }

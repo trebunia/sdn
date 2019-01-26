@@ -7,6 +7,7 @@ import org.projectfloodlight.openflow.protocol.OFMessage;
 import org.projectfloodlight.openflow.protocol.OFPacketIn;
 import org.projectfloodlight.openflow.protocol.OFType;
 import org.projectfloodlight.openflow.types.OFPort;
+import org.projectfloodlight.openflow.types.DatapathId;
 
 import net.floodlightcontroller.core.FloodlightContext;
 import net.floodlightcontroller.core.IOFMessageListener;
@@ -16,6 +17,8 @@ import net.floodlightcontroller.core.module.FloodlightModuleException;
 import net.floodlightcontroller.core.module.IFloodlightModule;
 import net.floodlightcontroller.core.module.IFloodlightService;
 import net.floodlightcontroller.core.IFloodlightProviderService;
+import net.floodlightcontroller.core.internal.IOFSwitchService;
+
 import java.util.ArrayList;
 
 import org.slf4j.Logger;
@@ -43,6 +46,8 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 		return false;
 	}
 
+	protected IOFSwitchService switchService;
+
 	@Override
 	public net.floodlightcontroller.core.IListener.Command receive(IOFSwitch sw, OFMessage msg,
 			FloodlightContext cntx) {
@@ -50,9 +55,31 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 		logger.info("************* NEW PACKET IN *************");
 //		PacketExtractor extractor = new PacketExtractor();
 //		extractor.packetExtract(cntx);
-		
-		// Marcin: 
-		
+
+		try {
+			 logger.warn("X_X_X_X_X_X_X_X_X_X_X_X_X_X_X_X_____X_X_X_X_X__X_X_X_X_X_X_X_X_X_X_X_X_");
+			// if (switchService.getSwitch(DatapathId.of("00:00:00:00:00:00:00:03")) != null) {
+			// 	logger.warn("@@@@@@@@@@@@@@@@@@@2");
+			// }
+			// IOFSwitch sw1 = switchService.getSwitch(DatapathId.of(sw.getId().toString()));
+
+			// for (DatapathId id : switchService.getAllSwitchDpids()) {
+			// 	logger.warn("id: {}", id.toString());
+			// }
+			// if (switchService.getAllSwitchDpids().contains(DatapathId.of("00:00:00:00:00:00:00:03"))) {
+			// 	logger.warn("Zawiera");
+			// } else {
+			// 	logger.warn("NIE zawiera");
+			// }
+			//
+			// logger.warn("słicz 3: {}", switchService.getSwitch(DatapathId.of("00:00:00:00:00:00:00:03")));
+			// logger.warn("_____________________________________________________________________");
+
+		} catch (Exception ex) {
+			logger.error("MWMWMWMWMWMWMWMWMWMWMWOWOOOOOOOOOOOOOOOOOOLLLLLLLLLLLLLLLLIIIIIIIIIIIIIIIIAAAAAAAAAAAAAAAAQWEWETTRYTYUOUOUOUOUOUOUOUUOUOUOUOUOIOOIOIOIOIOIOIOIOIOIOIOIOIOIIOIOIOOIOIIOIOIOIOIOIOIOIOIOIOIOXOXOXOXOXOXOXOXOXOXOXOXOXOOXOXOXOXOXOXOXOX", ex);
+		}
+
+
 		if (sw.getId().toString().equals("00:00:00:00:00:00:00:01")) {
 			StatisticsCollector.getInstance(sw);
 			logger.info("Switch id: {}", sw.getId().toString());
@@ -63,9 +90,17 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 			StatisticsCollector.getInstance(sw);
 			logger.info("Switch id: {}", sw.getId().toString());
 		}
-		// domyślnie:
-		// StatisticsCollector.getInstance(sw);
-		
+		else if (sw.getId().toString().equals("00:00:00:00:00:00:00:04")) {
+			logger.info("Switch id: {}", sw.getId().toString());
+			//determine_destination_switch()
+		} else if(sw.getId().toString().equals("00:00:00:00:00:00:00:05")) {
+			logger.info("Switch id: {}", sw.getId().toString());
+			//determine_destination_switch()
+		} else if(sw.getId().toString().equals("00:00:00:00:00:00:00:06")) {
+			logger.info("Switch id: {}", sw.getId().toString());
+			//determine_destination_switch()
+		}
+
 //		OFPacketIn pin = (OFPacketIn) msg;
 //		OFPort outPort = OFPort.of(0);
 //		if (pin.getInPort() == OFPort.of(1)) {
@@ -104,9 +139,10 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 
 	@Override
 	public void startUp(FloodlightModuleContext context) throws FloodlightModuleException {
+		this.switchService = context.getServiceImpl(IOFSwitchService.class);
+		//switchService.addOFSwitchListener(this);
 		floodlightProvider.addOFMessageListener(OFType.PACKET_IN, this);
 		logger.info("******************* START **************************");
-
 	}
 
 }

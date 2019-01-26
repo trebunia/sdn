@@ -142,6 +142,7 @@
            debug="true" 
            srcdir="${source}:${thrift.out.dir}"
            destdir="${build}">
+	   <compilerarg suffix="--add-modules java.xml.bind"/>
         </javac>
         <copy todir="${build}">
             <fileset dir="${resources}" />
@@ -154,7 +155,9 @@
            srcdir="${source-test}"
            classpath="${build}"
            classpathref="classpath-test"
-           destdir="${build-test}"/>
+           destdir="${build-test}">
+	   <compilerarg suffix="--add-modules java.xml.bind"/>
+        </javac>
     </target>
 
     <target name="gen-thrift" depends="init">
