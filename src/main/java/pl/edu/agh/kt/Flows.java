@@ -11,6 +11,9 @@ import org.projectfloodlight.openflow.protocol.OFVersion;
 import org.projectfloodlight.openflow.protocol.action.OFAction;
 import org.projectfloodlight.openflow.protocol.action.OFActionOutput;
 import org.projectfloodlight.openflow.protocol.action.OFActionSetNwDst;
+import org.projectfloodlight.openflow.protocol.action.OFActionSetDlDst;
+import org.projectfloodlight.openflow.protocol.action.OFActionSetNwSrc;
+import org.projectfloodlight.openflow.protocol.action.OFActionSetDlSrc;
 import org.projectfloodlight.openflow.protocol.match.Match;
 import org.projectfloodlight.openflow.protocol.match.MatchField;
 import org.projectfloodlight.openflow.types.DatapathId;
@@ -104,15 +107,20 @@ public class Flows {
 			ipv4 = (IPv4) eth.getPayload();
 			if (ipv4.getProtocol() == IpProtocol.TCP) {
 				tcp = (TCP) ipv4.getPayload();
-				if(tcp.getDestinationPort() == TransportPort.of(80) || tcp.getSourcePort() == TransportPort.of(80)) {
+				if(tcp.getDestinationPort().getPort()==80 || tcp.getSourcePort().getPort()==80) {
+					logger.info("GOT IN !!!______________________________________________");
 					if(sw.getId().toString().equals("00:00:00:00:00:00:00:04") && pin.getInPort().getPortNumber() == 1) {
 						//vipProxyArpReply(sw, pin, cntx);
+						logger.info("GOT IN !!! S4 to S2");
 						fromS4toS2(sw, pin, cntx);
 					} else if(sw.getId().toString().equals("00:00:00:00:00:00:00:02") && pin.getInPort().getPortNumber() == 2) {
+						logger.info("S2 to Sv2");
 						fromS2toSV2(sw, pin, cntx);
 					} else if(sw.getId().toString().equals("00:00:00:00:00:00:00:02") && pin.getInPort().getPortNumber() == 1) {
+						logger.info("S2 to S4");
 						fromS2toS4(sw, pin, cntx);
 					} else if(sw.getId().toString().equals("00:00:00:00:00:00:00:04") && pin.getInPort().getPortNumber() == 3){
+						logger.info("S4 to H1");
 						fromS4toH1(sw, pin, cntx);
 					}
 				}
@@ -170,16 +178,21 @@ public class Flows {
 		// actions
 		OFActionOutput.Builder aob = sw.getOFFactory().actions().buildOutput();
 		List<OFAction> actions = new ArrayList<OFAction>();
+
+		//podmieniam adres docelowy
+		OFActionSetNwSrc.Builder nsrc = sw.getOFFactory().actions().buildSetNwSrc();
+		nsrc.setNwAddr(IPv4Address.of("10.0.0.4"));
+		actions.add(nsrc.build());
+
+		//podmieniam MAC docelowy
+		OFActionSetDlSrc.Builder dlsrc = sw.getOFFactory().actions().buildSetDlSrc();
+		dlsrc.setDlAddr(MacAddress.of("00:00:00:00:00:04"));
+		actions.add(dlsrc.build());
+
 		// przekazuje na port 2
 		aob.setPort(OFPort.of(2));
 		aob.setMaxLen(Integer.MAX_VALUE);
 		actions.add(aob.build());
-
-		//podmieniam adres docelowy
-		OFActionSetNwDst.Builder ndst = sw.getOFFactory().actions().buildSetNwDst();
-		ndst.setNwAddr(IPv4Address.of("10.0.0.5"));
-		actions.add(ndst.build());
-
 
 		fmb.setMatch(m).setIdleTimeout(FLOWMOD_DEFAULT_IDLE_TIMEOUT).setHardTimeout(FLOWMOD_DEFAULT_HARD_TIMEOUT)
 		.setBufferId(pin.getBufferId()).setOutPort(OFPort.of(1)).setPriority(FLOWMOD_DEFAULT_PRIORITY);
@@ -252,6 +265,11 @@ public class Flows {
 		OFActionSetNwDst.Builder ndst = sw.getOFFactory().actions().buildSetNwDst();
 		ndst.setNwAddr(IPv4Address.of("10.0.0.5"));
 		actions.add(ndst.build());
+
+		//podmieniam MAC docelowy
+		OFActionSetDlDst.Builder dldst = sw.getOFFactory().actions().buildSetDlDst();
+		dldst.setDlAddr(MacAddress.of("00:00:00:00:00:05"));
+		actions.add(dldst.build());
 
 		// przekazuje na port 2
 		aob.setPort(OFPort.of(3));
@@ -340,11 +358,11 @@ public class Flows {
 
 		return mb.build();
 	}
-	public static void pushPacket(IPacket packet, 
+	public static void pushPacket(IPacket packet,
 			IOFSwitch sw,
 			OFBufferId bufferId,
 			OFPort inPort,
-			OFPort outPort, 
+			OFPort outPort,
 			FloodlightContext cntx,
 			boolean flush) {
 		OFPacketOut.Builder pob = sw.getOFFactory().buildPacketOut();

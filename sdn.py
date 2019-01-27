@@ -50,8 +50,10 @@ def gentraffic(self, line):
     "generate random http traffic\nUsage: gentraffic [number_of_flows]"
     net = self.mn
     for i in range(int(line)):
-        sips = [ s for s in net.get('sv1', 'sv2', 'sv3') ]
-        hips = [ h for h in net.get('h1', 'h2', 'h3') ]
+#        sips = [ s for s in net.get('sv1', 'sv2', 'sv3') ]
+#        hips = [ h for h in net.get('h1', 'h2', 'h3') ]
+        sips = [ s for s in net.get('sv1', 'sv1') ]
+        hips = [ h for h in net.get('h1', 'h1') ]
         dst = randint(0,len(sips)-1)
         src = randint(0,len(hips)-1)
         timeout = randint(1,60)
