@@ -65,14 +65,18 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 		}
 		// domyślnie:
 		// StatisticsCollector.getInstance(sw);
-		
+
+		/* takie bylo		
 		OFPacketIn pin = (OFPacketIn) msg;
 		OFPort outPort = OFPort.of(0);
 		if (pin.getInPort() == OFPort.of(1)) {
 			outPort = OFPort.of(2);
 		} else
 			outPort = OFPort.of(1);
-		Flows.simpleAdd(sw, pin, cntx, outPort);
+		*/
+		logger.info("before addflow");
+		OFPacketIn pin = (OFPacketIn) msg;
+		Flows.addFlow(sw, pin, cntx);
 		
 		return Command.STOP;
 	}
