@@ -59,16 +59,16 @@ public class Flows {
 
 
 	public static void sendPacketOut(IOFSwitch sw) {
-		// TODO punkt 3 instrukcji
+
 	}
 
 	public static void simpleAdd(IOFSwitch sw, OFPacketIn pin, FloodlightContext cntx, OFPort outPort) {
 		// FlowModBuilder
 		OFFlowMod.Builder fmb = sw.getOFFactory().buildFlowAdd();
 		// match
-//		Match.Builder mb = sw.getOFFactory().buildMatch();
-//		mb.setExact(MatchField.IN_PORT, pin.getInPort());
-//		Match m = mb.build();
+		//		Match.Builder mb = sw.getOFFactory().buildMatch();
+		//		mb.setExact(MatchField.IN_PORT, pin.getInPort());
+		//		Match m = mb.build();
 		Match m = createMatchFromPacket(sw, pin.getInPort(), cntx);
 
 		// actions
@@ -78,7 +78,7 @@ public class Flows {
 		aob.setMaxLen(Integer.MAX_VALUE);
 		actions.add(aob.build());
 		fmb.setMatch(m).setIdleTimeout(FLOWMOD_DEFAULT_IDLE_TIMEOUT).setHardTimeout(FLOWMOD_DEFAULT_HARD_TIMEOUT)
-				.setBufferId(pin.getBufferId()).setOutPort(outPort).setPriority(FLOWMOD_DEFAULT_PRIORITY);
+		.setBufferId(pin.getBufferId()).setOutPort(outPort).setPriority(FLOWMOD_DEFAULT_PRIORITY);
 		fmb.setActions(actions);
 		// write flow to switch
 		try {
@@ -90,9 +90,46 @@ public class Flows {
 		}
 	}
 
- 	public static void addEtriesForAllNeededSwitchesForFLow(IOFSwitch swRight, IOFSwitch swLeft, OFPacketIn pin, FloodlightContext cntx, OFPort outPort, String serverIPAddr, int serverPort, String hostIPAddr, int hostPort, int innerPortTowardsRightSwitch, int innerPortTowardsLeftSwitch, String serverMac) {
+	public static void addEtriesForAllNeededSwitchesForFLow(IOFSwitch swRight, IOFSwitch swLeft, OFPacketIn pin, FloodlightContext cntx, OFPort outPort, String serverIPAddr, int serverPort, String hostIPAddr, int hostPort, int innerPortTowardsRightSwitch, int innerPortTowardsLeftSwitch, String serverMac) {
 
-	//1. Switch PRAWY -> Switch LEWY
+		// packetOut
+
+		Ethernet eth = IFloodlightProviderService.bcStore.get(cntx,	IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
+		if (eth.getEtherType() == EthType.IPv4) {
+			IPv4 ipv4 = (IPv4) eth.getPayload();
+
+			ipv4.setDestinationAddress(serverIPAddr);
+			eth.setDestinationMACAddress(serverMac);
+
+			// 		
+			// 	// IP
+			// 		IPv4 l3	= new IPv4();
+			// 		l3.setSourceAddress(IPv4Address.of("192.168.1.1"));
+			// 		l3.setDestinationAddress(IPv4Address.of("192.168.1.255"));
+			// 		l3.setTtl((byte) 64);
+			// 		l3.setProtocol(IpProtocol.TCP);
+			// 		
+			// 	// UDP
+			// 		TCP	l4 = new TCP();
+			// 		//l4.setSourcePort(TransportPort.of(65003));
+			// 		//l4.setDestinationPort(TransportPort.of(53));
+			// 		
+			// 	// serializacja	
+			eth.setPayload(ipv4);
+
+			byte []	serializedData = eth.serialize();
+
+			// Create Packet-Out and Write to Switch
+			OFPacketOut po = swRight.getOFFactory().buildPacketOut().setData(serializedData)
+					.setActions(Collections.singletonList((OFAction)swRight.getOFFactory().actions().output(OFPort.of(innerPortTowardsLeftSwitch), 0xffFFffFF)))
+					.setInPort(OFPort.CONTROLLER).build();
+			swRight.write(po);
+			logger.info("****************** PACKET OUT SENT *************");
+		}
+
+
+
+		//1. Switch PRAWY -> Switch LEWY
 		// FlowModBuilder
 		OFFlowMod.Builder fmb = swRight.getOFFactory().buildFlowAdd();
 		// match
@@ -137,7 +174,7 @@ public class Flows {
 		}
 
 
-	//2. Switch LEWY -> server
+		//2. Switch LEWY -> server
 		mb = swLeft.getOFFactory().buildMatch();
 		mb.setExact(MatchField.IN_PORT, OFPort.of(innerPortTowardsRightSwitch));
 		mb.setExact(MatchField.IPV4_SRC, IPv4Address.of(hostIPAddr));
@@ -169,7 +206,7 @@ public class Flows {
 		}
 
 
-	//3. Switch LEWY -> Switch PRAWY
+		//3. Switch LEWY -> Switch PRAWY
 		mb = swLeft.getOFFactory().buildMatch();
 		mb.setExact(MatchField.IN_PORT, OFPort.of(1));
 		mb.setExact(MatchField.IPV4_SRC, IPv4Address.of(serverIPAddr));
@@ -201,8 +238,8 @@ public class Flows {
 		}
 
 
-	//4. Switch PRAWY -> Host
-	mb = swRight.getOFFactory().buildMatch();
+		//4. Switch PRAWY -> Host
+		mb = swRight.getOFFactory().buildMatch();
 		mb.setExact(MatchField.IN_PORT, OFPort.of(innerPortTowardsRightSwitch));
 		mb.setExact(MatchField.IPV4_DST, IPv4Address.of(serverIPAddr));
 		mb.setExact(MatchField.TCP_SRC, TransportPort.of(serverPort));
@@ -266,17 +303,17 @@ public class Flows {
 
 		// TODO Detect switch type and match to create hardware-implemented flow
 		if (eth.getEtherType() == EthType.IPv4) { /*
-													 * shallow check for
-													 * equality is okay for
-													 * EthType
-													 */
+		 * shallow check for
+		 * equality is okay for
+		 * EthType
+		 */
 			IPv4 ip = (IPv4) eth.getPayload();
 			IPv4Address srcIp = ip.getSourceAddress();
 			IPv4Address dstIp = ip.getDestinationAddress();
 
 			if (FLOWMOD_DEFAULT_MATCH_IP_ADDR) {
 				mb.setExact(MatchField.ETH_TYPE, EthType.IPv4).setExact(MatchField.IPV4_SRC, srcIp)
-						.setExact(MatchField.IPV4_DST, dstIp);
+				.setExact(MatchField.IPV4_DST, dstIp);
 			}
 
 			if (FLOWMOD_DEFAULT_MATCH_TRANSPORT) {
@@ -291,18 +328,18 @@ public class Flows {
 				if (ip.getProtocol().equals(IpProtocol.TCP)) {
 					TCP tcp = (TCP) ip.getPayload();
 					mb.setExact(MatchField.IP_PROTO, IpProtocol.TCP).setExact(MatchField.TCP_SRC, tcp.getSourcePort())
-							.setExact(MatchField.TCP_DST, tcp.getDestinationPort());
+					.setExact(MatchField.TCP_DST, tcp.getDestinationPort());
 				} else if (ip.getProtocol().equals(IpProtocol.UDP)) {
 					UDP udp = (UDP) ip.getPayload();
 					mb.setExact(MatchField.IP_PROTO, IpProtocol.UDP).setExact(MatchField.UDP_SRC, udp.getSourcePort())
-							.setExact(MatchField.UDP_DST, udp.getDestinationPort());
+					.setExact(MatchField.UDP_DST, udp.getDestinationPort());
 				}
 			}
 		} else if (eth.getEtherType() == EthType.ARP) { /*
-														 * shallow check for
-														 * equality is okay for
-														 * EthType
-														 */
+		 * shallow check for
+		 * equality is okay for
+		 * EthType
+		 */
 			mb.setExact(MatchField.ETH_TYPE, EthType.ARP);
 		}
 

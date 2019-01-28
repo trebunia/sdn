@@ -29,7 +29,7 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 
 	private static String[] leftSwitchMac = new String[] {"00:00:00:00:00:00:00:01","00:00:00:00:00:00:00:02","00:00:00:00:00:00:00:03"};
 	private static String[] serverIPAddr = new String[] {"10.0.0.4","10.0.0.5","10.0.0.6"};
-	private static String[] serverMacTable = new String[] {"00:00:04","00:00:05","00:00:06"};
+	private static String[] serverMacTable = new String[] {"00:00:00:00:00:04","00:00:00:00:00:05","00:00:00:00:00:06"};
 	private static int[] serverPort = new int[] {80,80,80};
 	//private static String[] hostIPTable = new String[] {"10.0.0.1","10.0.0.2","10.0.0.3"};
 	private static double[] thresholds = new double[] {0.2,0.3,0.5};
@@ -131,9 +131,9 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 		double sum = bandwidths[0] + bandwidths[1] + bandwidths[2];
 		if (sum == 0.0) return 2;
 
-		double deficit_0 = thresholds[0] - bandwidths[0]/sum;
-		double deficit_1 = thresholds[1] - bandwidths[1]/sum;
-		double deficit_2 = thresholds[2] - bandwidths[2]/sum;
+		double deficit_0 = 0; //thresholds[0] - bandwidths[0]/sum;
+		double deficit_1 = 0; //thresholds[1] - bandwidths[1]/sum;
+		double deficit_2 = 1;//thresholds[2] - bandwidths[2]/sum;
 
 		if (deficit_0 >= deficit_1 && deficit_0 >= deficit_2) index = 0;
 		else if (deficit_1 >= deficit_0 && deficit_1 >= deficit_2) index = 1;
