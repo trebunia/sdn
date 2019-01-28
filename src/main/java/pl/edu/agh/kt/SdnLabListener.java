@@ -2,6 +2,7 @@ package pl.edu.agh.kt;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.stream.*;
 
 import org.projectfloodlight.openflow.protocol.OFMessage;
 import org.projectfloodlight.openflow.protocol.OFPacketIn;
@@ -25,6 +26,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
+
+	private static String[] leftSwitchMac = new String[] {"00:00:00:00:00:00:00:01","00:00:00:00:00:00:00:02","00:00:00:00:00:00:00:03"};
+	private static String[] serverIPAddr = new String[] {"10.0.0.4","10.0.0.5","10.0.0.6"};
+	private static int[] serverPort = new int[] {80,80,80};
+	//private static String[] hostIPTable = new String[] {"10.0.0.1","10.0.0.2","10.0.0.3"};
+	private static double[] thresholds = new double[] {0.2,0.3,0.5};
 
 	protected IFloodlightProviderService floodlightProvider;
 	protected static Logger logger;
@@ -53,11 +60,8 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 			FloodlightContext cntx) {
 
 		logger.info("************* NEW PACKET IN *************");
-//		PacketExtractor extractor = new PacketExtractor();
-//		extractor.packetExtract(cntx);
 
 		try {
-			 logger.warn("X_X_X_X_X_X_X_X_X_X_X_X_X_X_X_X_____X_X_X_X_X__X_X_X_X_X_X_X_X_X_X_X_X_");
 			// if (switchService.getSwitch(DatapathId.of("00:00:00:00:00:00:00:03")) != null) {
 			// 	logger.warn("@@@@@@@@@@@@@@@@@@@2");
 			// }
@@ -79,37 +83,66 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 			logger.error("MWMWMWMWMWMWMWMWMWMWMWOWOOOOOOOOOOOOOOOOOOLLLLLLLLLLLLLLLLIIIIIIIIIIIIIIIIAAAAAAAAAAAAAAAAQWEWETTRYTYUOUOUOUOUOUOUOUUOUOUOUOUOIOOIOIOIOIOIOIOIOIOIOIOIOIOIIOIOIOOIOIIOIOIOIOIOIOIOIOIOIOIOXOXOXOXOXOXOXOXOXOXOXOXOXOOXOXOXOXOXOXOXOX", ex);
 		}
 
+		OFPacketIn pin = (OFPacketIn) msg;
 
-		if (sw.getId().toString().equals("00:00:00:00:00:00:00:01")) {
-			StatisticsCollector.getInstance(sw);
-			logger.info("Switch id: {}", sw.getId().toString());
-		} else if(sw.getId().toString().equals("00:00:00:00:00:00:00:02")) {
-			StatisticsCollector.getInstance(sw);
-			logger.info("Switch id: {}", sw.getId().toString());
-		} else if(sw.getId().toString().equals("00:00:00:00:00:00:00:03")) {
-			StatisticsCollector.getInstance(sw);
-			logger.info("Switch id: {}", sw.getId().toString());
-		}
-		else if (sw.getId().toString().equals("00:00:00:00:00:00:00:04")) {
-			logger.info("Switch id: {}", sw.getId().toString());
-			//determine_destination_switch()
-		} else if(sw.getId().toString().equals("00:00:00:00:00:00:00:05")) {
-			logger.info("Switch id: {}", sw.getId().toString());
-			//determine_destination_switch()
-		} else if(sw.getId().toString().equals("00:00:00:00:00:00:00:06")) {
-			logger.info("Switch id: {}", sw.getId().toString());
-			//determine_destination_switch()
-		}
+		logger.info("Switch id: {}", sw.getId().toString());
+		logger.info("Interface: {}", pin.getInPort());
 
-//		OFPacketIn pin = (OFPacketIn) msg;
-//		OFPort outPort = OFPort.of(0);
-//		if (pin.getInPort() == OFPort.of(1)) {
-//			outPort = OFPort.of(2);
-//		} else
-//			outPort = OFPort.of(1);
-//		Flows.simpleAdd(sw, pin, cntx, outPort);
-		// return Command.STOP;
+		if (sw.getId().toString().equals("00:00:00:00:00:00:00:01") || sw.getId().toString().equals("00:00:00:00:00:00:00:02") || sw.getId().toString().equals("00:00:00:00:00:00:00:03")) {
+			StatisticsCollector.getInstance(sw);
+
+			if (pin.getInPort() == OFPort.of(4) || pin.getInPort() == OFPort.of(5) || pin.getInPort() == OFPort.of(6)) {
+		 		Flows.simpleAdd(sw, pin, cntx, OFPort.of(1));
+		 	}
+			else if(pin.getInPort() == OFPort.of(1)) {
+				logger.error("Packet_in not expected on port: {}, sending on port 4", pin.getInPort()); //suppress
+				Flows.simpleAdd(sw, pin, cntx, OFPort.of(4));
+			}
+		}
+		else if (sw.getId().toString().equals("00:00:00:00:00:00:00:04") || sw.getId().toString().equals("00:00:00:00:00:00:00:05") || sw.getId().toString().equals("00:00:00:00:00:00:00:06")) {
+
+			if (pin.getInPort() == OFPort.of(1)) {//action for other ports already satisfied in this 'if'
+				PacketExtractor extractor = new PacketExtractor();
+				extractor.packetExtract(cntx);
+				String hostIPAddr = extractor.getSrcIPAddress();
+				int hostPort = extractor.getSrcTcpPort();
+
+				logger.info("calculating destination server for new flow"); //suppress
+				int index = this.CalculateDestinationServerIndex();
+				int innerPortTowardsLeftSwitch = index + 2;// interfejs na lewym switchu (2,3 lub 4)
+				int innerPortTowardsRightSwitch = 0;
+				if (sw.getId().toString().equals("00:00:00:00:00:00:00:04")) innerPortTowardsRightSwitch = 2;//interfejs na prawym switchu
+				if (sw.getId().toString().equals("00:00:00:00:00:00:00:05")) innerPortTowardsRightSwitch = 3;
+				if (sw.getId().toString().equals("00:00:00:00:00:00:00:06")) innerPortTowardsRightSwitch = 4;
+
+				IOFSwitch swRight = sw;
+				IOFSwitch swLeft = switchService.getSwitch(DatapathId.of(leftSwitchMac[index])); //switch od serwera, który został wybrany dla tego flowu
+
+				Flows.addEtriesForAllNeededSwitchesForFLow(swRight, swLeft, pin, cntx, OFPort.of(1), serverIPAddr[index], serverPort[index], hostIPAddr, hostPort, innerPortTowardsRightSwitch, innerPortTowardsLeftSwitch);
+			}
+		}
 		return Command.CONTINUE;
+	}
+
+	public int CalculateDestinationServerIndex() {
+		int index = 0;
+		double[] bandwidths = StatisticsCollector.getBandwidths();
+		double sum = bandwidths[0] + bandwidths[1] + bandwidths[2];
+		if (sum == 0.0) return 2;
+
+		double deficit_0 = thresholds[0] - bandwidths[0]/sum;
+		double deficit_1 = thresholds[1] - bandwidths[1]/sum;
+		double deficit_2 = thresholds[2] - bandwidths[2]/sum;
+
+		if (deficit_0 >= deficit_1 && deficit_0 >= deficit_2) index = 0;
+		else if (deficit_1 >= deficit_0 && deficit_1 >= deficit_2) index = 1;
+		else if (deficit_2 >= deficit_0 && deficit_2 >= deficit_1) index = 2;
+
+		//logger.info("bandwidths - 1: {}, 2: {}, 3: {}", bandwidths[0], bandwidths[1], bandwidths[2]);
+		//logger.info("deficits - 1: {}, 2: {}, 3: {}", deficit_0, deficit_1, deficit_2);
+		logger.info("Chosen index: {}}", index);
+
+		return index;
 	}
 
 	@Override

@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.util.concurrent.ListenableFuture;
 import net.floodlightcontroller.core.IOFSwitch;
 import net.floodlightcontroller.topology.NodePortTuple;
+
 public class StatisticsCollector {
 
 	private static final Logger logger = LoggerFactory.getLogger(StatisticsCollector.class);
@@ -96,7 +97,7 @@ public class StatisticsCollector {
 	private static StatisticsCollector statscollector1;
 	private static StatisticsCollector statscollector2;
 	private static StatisticsCollector statscollector3;
-	private static float[] bandwidths = new float[] {0,0,0};
+	private static double[] bandwidths = new double[] {0,0,0};
 
 	private StatisticsCollector(IOFSwitch sw) {
 		this.sw	= sw;
@@ -104,7 +105,7 @@ public class StatisticsCollector {
 	}
 
 	public static StatisticsCollector getInstance(IOFSwitch sw) {
-		StatisticsCollector stats = null;
+		StatisticsCollector statscolector = null;
 		logger.debug("getInstance() begin {}", sw.getId().toString());
 		if(sw.getId().toString().equals("00:00:00:00:00:00:00:01")){
 			synchronized (StatisticsCollector.class) {
@@ -113,7 +114,7 @@ public class StatisticsCollector {
 				}
 			}
 			logger.debug("ABCD statscollector1");
-			stats = statscollector1;
+			statscolector = statscollector1;
 		} else if(sw.getId().toString().equals("00:00:00:00:00:00:00:02")) {
 			synchronized (StatisticsCollector.class) {
 				if (statscollector2 == null) {
@@ -121,7 +122,7 @@ public class StatisticsCollector {
 				}
 			}
 			logger.debug("ABCD statscollector2");
-			stats = statscollector2;
+			statscolector = statscollector2;
 		} else if(sw.getId().toString().equals("00:00:00:00:00:00:00:03")) {
 			synchronized (StatisticsCollector.class) {
 				if (statscollector3 == null) {
@@ -130,13 +131,13 @@ public class StatisticsCollector {
 				}
 			}
 			logger.debug("ABCD statscollector3");
-			stats = statscollector3;
+			statscolector = statscollector3;
 		}
 		logger.debug("getInstance() end");
-		return stats;
+		return statscolector;
 	}
 
-	public static float[] getBandwidths() {
+	public static double[] getBandwidths() {
 		logger.warn("Sending statistics to SdnLabListener");
 		return bandwidths;
 	}
