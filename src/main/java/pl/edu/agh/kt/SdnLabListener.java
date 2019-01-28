@@ -29,6 +29,7 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 
 	private static String[] leftSwitchMac = new String[] {"00:00:00:00:00:00:00:01","00:00:00:00:00:00:00:02","00:00:00:00:00:00:00:03"};
 	private static String[] serverIPAddr = new String[] {"10.0.0.4","10.0.0.5","10.0.0.6"};
+	private static String[] serverMacTable = new String[] {"00:00:04","00:00:05","00:00:06"};
 	private static int[] serverPort = new int[] {80,80,80};
 	//private static String[] hostIPTable = new String[] {"10.0.0.1","10.0.0.2","10.0.0.3"};
 	private static double[] thresholds = new double[] {0.2,0.3,0.5};
@@ -118,7 +119,7 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 				IOFSwitch swRight = sw;
 				IOFSwitch swLeft = switchService.getSwitch(DatapathId.of(leftSwitchMac[index])); //switch od serwera, który został wybrany dla tego flowu
 
-				Flows.addEtriesForAllNeededSwitchesForFLow(swRight, swLeft, pin, cntx, OFPort.of(1), serverIPAddr[index], serverPort[index], hostIPAddr, hostPort, innerPortTowardsRightSwitch, innerPortTowardsLeftSwitch);
+				Flows.addEtriesForAllNeededSwitchesForFLow(swRight, swLeft, pin, cntx, OFPort.of(1), serverIPAddr[index], serverPort[index], hostIPAddr, hostPort, innerPortTowardsRightSwitch, innerPortTowardsLeftSwitch, serverMacTable[index]);
 			}
 		}
 		return Command.CONTINUE;

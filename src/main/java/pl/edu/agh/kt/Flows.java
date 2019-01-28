@@ -90,7 +90,7 @@ public class Flows {
 		}
 	}
 
- 	public static void addEtriesForAllNeededSwitchesForFLow(IOFSwitch swRight, IOFSwitch swLeft, OFPacketIn pin, FloodlightContext cntx, OFPort outPort, String serverIPAddr, int serverPort, String hostIPAddr, int hostPort, int innerPortTowardsRightSwitch, int innerPortTowardsLeftSwitch) {
+ 	public static void addEtriesForAllNeededSwitchesForFLow(IOFSwitch swRight, IOFSwitch swLeft, OFPacketIn pin, FloodlightContext cntx, OFPort outPort, String serverIPAddr, int serverPort, String hostIPAddr, int hostPort, int innerPortTowardsRightSwitch, int innerPortTowardsLeftSwitch, String serverMac) {
 
 	//1. Switch PRAWY -> Switch LEWY
 		// FlowModBuilder
@@ -115,7 +115,7 @@ public class Flows {
 
 		//podmieniam MAC docelowy
 		OFActionSetDlDst.Builder dldst = swRight.getOFFactory().actions().buildSetDlDst();
-		dldst.setDlAddr(MacAddress.of(swLeft.getId().toString()));
+		dldst.setDlAddr(MacAddress.of(serverMac));
 		actions.add(dldst.build());
 
 		// przekazuje na port 2
