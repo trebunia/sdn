@@ -47,14 +47,12 @@ def gentraffic(self, line):
     "generate random http traffic\nUsage: gentraffic [number_of_flows]"
     net = self.mn
     for i in range(int(line)):
-        sips = [ s for s in net.get('sv1', 'sv2', 'sv3') ]
         hips = [ h for h in net.get('h1', 'h2', 'h3') ]
-        dst = randint(0,len(sips)-1)
         src = randint(0,len(hips)-1)
         timeout = randint(1,60)
         bandwidth = randint(100, 50000)
         hips[src].cmd('timeout -s KILL {} wget --limit-rate={}K 10.0.0.4/file -O - > /dev/null &'.format(timeout, bandwidth) )
-        print "creating flow from {} to {} - bandwidth {}, timeout {}".format(hips[src].IP(), sips[dst].IP(), bandwidth,timeout)
+        print "creating flow from {} to 10.0.0.4 - bandwidth {}, timeout {}".format(hips[src].IP(), bandwidth,timeout)
 
 
 
