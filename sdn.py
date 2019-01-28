@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 from mininet.topo import Topo
+from mininet.node import Host
 from mininet.net import Mininet
 from mininet.util import dumpNodeConnections
 from mininet.log import setLogLevel
@@ -12,14 +13,12 @@ import subprocess
 import os.path
 import signal
 
-
-ControllerIP='192.168.56.1'
-
 class TopoSDN(Topo):
     def build(self):
 	hosts = [ self.addHost( h ) for h in 'h1', 'h2', 'h3' ]
 	servers = [ self.addHost ( sv ) for sv in 'sv1', 'sv2', 'sv3' ]
 	switches = [ self.addSwitch( s ) for s in 's1', 's2', 's3', 's4', 's5', 's6' ]
+        
 	# Add links
 	# links hosts - switches
 	self.addLink(hosts[0], switches[3])
@@ -48,14 +47,12 @@ def gentraffic(self, line):
     "generate random http traffic\nUsage: gentraffic [number_of_flows]"
     net = self.mn
     for i in range(int(line)):
-        sips = [ s for s in net.get('sv1', 'sv2', 'sv3') ]
         hips = [ h for h in net.get('h1', 'h2', 'h3') ]
-        dst = randint(0,len(sips)-1)
         src = randint(0,len(hips)-1)
         timeout = randint(1,60)
         bandwidth = randint(100, 50000)
-        hips[src].cmd('timeout -s KILL {} wget --limit-rate={}K {}/file -O - > /dev/null &'.format(timeout, bandwidth, sips[dst].IP()) )
-        print "creating flow from {} to {} - bandwidth {}, timeout {}".format(hips[src].IP(), sips[dst].IP(), bandwidth,timeout)
+        hips[src].cmd('timeout -s KILL {} wget --limit-rate={}K 10.0.0.4/file -O - > /dev/null &'.format(timeout, bandwidth) )
+        print "creating flow from {} to 10.0.0.4 - bandwidth {}, timeout {}".format(hips[src].IP(), bandwidth,timeout)
 
 
 
@@ -66,9 +63,30 @@ def simpleTest(controllerip):
     net = Mininet(topo, controller=RemoteController( 'c0', ip=controllerip, port=6653 ))
     net.start()
     sv1, sv2, sv3 = net.get( 'sv1', 'sv2', 'sv3' )
+
+    sv1.setIP('10.0.0.4')                                           
+    sv1.setMAC('00:00:00:00:00:04')
+    
+    sv2.setIP('10.0.0.5')
+    sv2.setMAC('00:00:00:00:00:05')
+    
+    sv3.setIP('10.0.0.6')
+    sv3.setMAC('00:00:00:00:00:06')
+
+
     sv1.cmd('python -m SimpleHTTPServer 80 &')
     sv2.cmd('python -m SimpleHTTPServer 80 &')
     sv3.cmd('python -m SimpleHTTPServer 80 &')
+
+    h1, h2, h3 = net.get( 'h1', 'h2', 'h3' )
+    h1.setIP('10.0.0.1')
+    h1.setMAC('00:00:00:00:00:01')
+    h2.setIP('10.0.0.2')
+    h2.setMAC('00:00:00:00:00:02')
+
+    h3.setIP('10.0.0.3')
+    h3.setMAC('00:00:00:00:00:03')
+
 #    flows(net)
     CLI.do_gentraffic = gentraffic
     CLI(net)
