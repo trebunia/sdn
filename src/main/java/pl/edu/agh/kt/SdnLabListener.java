@@ -88,7 +88,7 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 		logger.info("Switch id: {}", sw.getId().toString());
 		logger.info("Interface: {}", pin.getInPort());
 
-		if (sw.getId().toString().equals("00:00:00:00:00:01") || sw.getId().toString().equals("00:00:00:00:00:02") || sw.getId().toString().equals("00:00:00:00:00:03")) {
+		if (sw.getId().toString().equals("00:00:00:00:00:00:00:01") || sw.getId().toString().equals("00:00:00:00:00:00:00:02") || sw.getId().toString().equals("00:00:00:00:00:00:00:03")) {
 			StatisticsCollector.getInstance(sw);
 
 			if (pin.getInPort() == OFPort.of(4) || pin.getInPort() == OFPort.of(5) || pin.getInPort() == OFPort.of(6)) {
@@ -99,7 +99,7 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 				Flows.simpleAdd(sw, pin, cntx, OFPort.of(4));
 			}
 		}
-		else if (sw.getId().toString().equals("00:00:00:00:00:04") || sw.getId().toString().equals("00:00:00:00:00:05") || sw.getId().toString().equals("00:00:00:00:00:06")) {
+		else if (sw.getId().toString().equals("00:00:00:00:00:00:00:04") || sw.getId().toString().equals("00:00:00:00:00:00:00:05") || sw.getId().toString().equals("00:00:00:00:00:00:00:06")) {
 
 			if (pin.getInPort() == OFPort.of(1)) {//action for other ports already satisfied in this 'if'
 				PacketExtractor extractor = new PacketExtractor();
@@ -111,9 +111,9 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 				int index = this.CalculateDestinationServerIndex();
 				int innerPortTowardsLeftSwitch = index + 2;// interfejs na lewym switchu (2,3 lub 4)
 				int innerPortTowardsRightSwitch = 0;
-				if (sw.getId().toString().equals("00:00:00:00:00:04")) innerPortTowardsRightSwitch = 2;//interfejs na prawym switchu
-				if (sw.getId().toString().equals("00:00:00:00:00:05")) innerPortTowardsRightSwitch = 3;
-				if (sw.getId().toString().equals("00:00:00:00:00:06")) innerPortTowardsRightSwitch = 4;
+				if (sw.getId().toString().equals("00:00:00:00:00:00:00:04")) innerPortTowardsRightSwitch = 2;//interfejs na prawym switchu
+				if (sw.getId().toString().equals("00:00:00:00:00:00:00:05")) innerPortTowardsRightSwitch = 3;
+				if (sw.getId().toString().equals("00:00:00:00:00:00:00:06")) innerPortTowardsRightSwitch = 4;
 
 				IOFSwitch swRight = sw;
 				IOFSwitch swLeft = switchService.getSwitch(DatapathId.of(leftSwitchMac[index])); //switch od serwera, który został wybrany dla tego flowu
