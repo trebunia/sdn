@@ -9,6 +9,10 @@ import org.projectfloodlight.openflow.protocol.OFPacketIn;
 import org.projectfloodlight.openflow.protocol.OFPacketOut;
 import org.projectfloodlight.openflow.protocol.action.OFAction;
 import org.projectfloodlight.openflow.protocol.action.OFActionOutput;
+import org.projectfloodlight.openflow.protocol.action.OFActionSetNwDst;
+import org.projectfloodlight.openflow.protocol.action.OFActionSetDlDst;
+import org.projectfloodlight.openflow.protocol.action.OFActionSetNwSrc;
+import org.projectfloodlight.openflow.protocol.action.OFActionSetDlSrc;
 import org.projectfloodlight.openflow.protocol.match.Match;
 import org.projectfloodlight.openflow.protocol.match.MatchField;
 import org.projectfloodlight.openflow.types.EthType;
@@ -19,6 +23,7 @@ import org.projectfloodlight.openflow.types.OFPort;
 import org.projectfloodlight.openflow.types.OFVlanVidMatch;
 import org.projectfloodlight.openflow.types.TransportPort;
 import org.projectfloodlight.openflow.types.VlanVid;
+import org.projectfloodlight.openflow.types.OFBufferId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,6 +35,7 @@ import net.floodlightcontroller.packet.Ethernet;
 import net.floodlightcontroller.packet.IPv4;
 import net.floodlightcontroller.packet.TCP;
 import net.floodlightcontroller.packet.UDP;
+import net.floodlightcontroller.packet.ICMP;
 
 public class Flows {
 
@@ -44,12 +50,14 @@ public class Flows {
 	protected static boolean FLOWMOD_DEFAULT_MATCH_IP_ADDR = true;
 	protected static boolean FLOWMOD_DEFAULT_MATCH_TRANSPORT = true;
 
+	protected static String MAIN_ADDR = "10.0.0.4"; //sv1 will be default
+
 	public Flows() {
 		logger.info("Flows() begin/end");
 	}
-	
-	
-	
+
+
+
 	public static void sendPacketOut(IOFSwitch sw) {
 		// TODO punkt 3 instrukcji
 	}
@@ -62,7 +70,7 @@ public class Flows {
 //		mb.setExact(MatchField.IN_PORT, pin.getInPort());
 //		Match m = mb.build();
 		Match m = createMatchFromPacket(sw, pin.getInPort(), cntx);
-		
+
 		// actions
 		OFActionOutput.Builder aob = sw.getOFFactory().actions().buildOutput();
 		List<OFAction> actions = new ArrayList<OFAction>();
@@ -77,6 +85,159 @@ public class Flows {
 			sw.write(fmb.build());
 			logger.info("Flow from port {} forwarded to port {}; match: {}",
 					new Object[] { pin.getInPort().getPortNumber(), outPort.getPortNumber(), m.toString() });
+		} catch (Exception e) {
+			logger.error("error {}", e);
+		}
+	}
+
+ 	public static void addEtriesForAllNeededSwitchesForFLow(IOFSwitch swRight, IOFSwitch swLeft, OFPacketIn pin, FloodlightContext cntx, OFPort outPort, String serverIPAddr, int serverPort, String hostIPAddr, int hostPort, int innerPortTowardsRightSwitch, int innerPortTowardsLeftSwitch) {
+
+	//1. Switch PRAWY -> Switch LEWY
+		// FlowModBuilder
+		OFFlowMod.Builder fmb = swRight.getOFFactory().buildFlowAdd();
+		// match
+		Match.Builder mb = swRight.getOFFactory().buildMatch();
+		mb.setExact(MatchField.IN_PORT, OFPort.of(1));
+		mb.setExact(MatchField.IPV4_SRC, IPv4Address.of(hostIPAddr));
+		mb.setExact(MatchField.TCP_SRC, TransportPort.of(hostPort));
+		mb.setExact(MatchField.IPV4_DST, IPv4Address.of(MAIN_ADDR));
+		mb.setExact(MatchField.TCP_DST, TransportPort.of(80));
+		Match m = mb.build();
+
+		// actions
+		OFActionOutput.Builder aob = swRight.getOFFactory().actions().buildOutput();
+		List<OFAction> actions = new ArrayList<OFAction>();
+
+		//podmieniam adres docelowy
+		OFActionSetNwDst.Builder ndst = swRight.getOFFactory().actions().buildSetNwDst();
+		ndst.setNwAddr(IPv4Address.of(serverIPAddr));
+		actions.add(ndst.build());
+
+		//podmieniam MAC docelowy
+		OFActionSetDlDst.Builder dldst = swRight.getOFFactory().actions().buildSetDlDst();
+		dldst.setDlAddr(MacAddress.of(swLeft.getId().toString()));
+		actions.add(dldst.build());
+
+		// przekazuje na port 2
+		aob.setPort(OFPort.of(innerPortTowardsLeftSwitch));
+		aob.setMaxLen(Integer.MAX_VALUE);
+		actions.add(aob.build());
+
+		fmb.setMatch(m).setIdleTimeout(FLOWMOD_DEFAULT_IDLE_TIMEOUT).setHardTimeout(FLOWMOD_DEFAULT_HARD_TIMEOUT)
+		.setBufferId(pin.getBufferId()).setOutPort(OFPort.of(innerPortTowardsLeftSwitch)).setPriority(FLOWMOD_DEFAULT_PRIORITY);
+		fmb.setActions(actions);
+		// write flow to switch
+
+		try {
+			swRight.write(fmb.build());
+			logger.info("Flow from port {} forwarded to port {}; match: {}",
+					new Object[] { pin.getInPort().getPortNumber(), OFPort.of(innerPortTowardsLeftSwitch).getPortNumber(), m.toString() });
+		} catch (Exception e) {
+			logger.error("error {}", e);
+		}
+
+
+	//2. Switch LEWY -> server
+		mb = swLeft.getOFFactory().buildMatch();
+		mb.setExact(MatchField.IN_PORT, OFPort.of(innerPortTowardsRightSwitch));
+		mb.setExact(MatchField.IPV4_SRC, IPv4Address.of(hostIPAddr));
+		mb.setExact(MatchField.TCP_SRC, TransportPort.of(hostPort));
+		mb.setExact(MatchField.IPV4_DST, IPv4Address.of(serverIPAddr));
+		mb.setExact(MatchField.TCP_DST, TransportPort.of(serverPort));
+		m = mb.build();
+
+		// actions
+		aob = swLeft.getOFFactory().actions().buildOutput();
+		actions = new ArrayList<OFAction>();
+
+		// przekazuje na port 1
+		aob.setPort(OFPort.of(1));
+		aob.setMaxLen(Integer.MAX_VALUE);
+		actions.add(aob.build());
+
+		fmb.setMatch(m).setIdleTimeout(FLOWMOD_DEFAULT_IDLE_TIMEOUT).setHardTimeout(FLOWMOD_DEFAULT_HARD_TIMEOUT)
+		.setBufferId(OFBufferId.NO_BUFFER).setOutPort(OFPort.of(1)).setPriority(FLOWMOD_DEFAULT_PRIORITY);
+		fmb.setActions(actions);
+		// write flow to switch
+
+		try {
+			swLeft.write(fmb.build());
+			logger.info("Flow from port {} forwarded to port {}; match: {}",
+					new Object[] { pin.getInPort().getPortNumber(), OFPort.of(1).getPortNumber(), m.toString() });
+		} catch (Exception e) {
+			logger.error("error {}", e);
+		}
+
+
+	//3. Switch LEWY -> Switch PRAWY
+		mb = swLeft.getOFFactory().buildMatch();
+		mb.setExact(MatchField.IN_PORT, OFPort.of(1));
+		mb.setExact(MatchField.IPV4_SRC, IPv4Address.of(serverIPAddr));
+		mb.setExact(MatchField.TCP_SRC, TransportPort.of(serverPort));
+		mb.setExact(MatchField.IPV4_DST, IPv4Address.of(hostIPAddr));
+		mb.setExact(MatchField.TCP_DST, TransportPort.of(hostPort));
+		m = mb.build();
+
+		// actions
+		aob = swLeft.getOFFactory().actions().buildOutput();
+		actions = new ArrayList<OFAction>();
+
+		// przekazuje na port 2
+		aob.setPort(OFPort.of(innerPortTowardsRightSwitch));
+		aob.setMaxLen(Integer.MAX_VALUE);
+		actions.add(aob.build());
+
+		fmb.setMatch(m).setIdleTimeout(FLOWMOD_DEFAULT_IDLE_TIMEOUT).setHardTimeout(FLOWMOD_DEFAULT_HARD_TIMEOUT)
+		.setBufferId(OFBufferId.NO_BUFFER).setOutPort(OFPort.of(innerPortTowardsRightSwitch)).setPriority(FLOWMOD_DEFAULT_PRIORITY);
+		fmb.setActions(actions);
+		// write flow to switch
+
+		try {
+			swLeft.write(fmb.build());
+			logger.info("Flow from port {} forwarded to port {}; match: {}",
+					new Object[] { pin.getInPort().getPortNumber(), OFPort.of(innerPortTowardsRightSwitch).getPortNumber(), m.toString() });
+		} catch (Exception e) {
+			logger.error("error {}", e);
+		}
+
+
+	//4. Switch PRAWY -> Host
+	mb = swRight.getOFFactory().buildMatch();
+		mb.setExact(MatchField.IN_PORT, OFPort.of(innerPortTowardsRightSwitch));
+		mb.setExact(MatchField.IPV4_DST, IPv4Address.of(serverIPAddr));
+		mb.setExact(MatchField.TCP_SRC, TransportPort.of(serverPort));
+		mb.setExact(MatchField.IPV4_DST, IPv4Address.of(hostIPAddr));
+		mb.setExact(MatchField.TCP_DST, TransportPort.of(hostPort));
+		m = mb.build();
+
+		// actions
+		aob = swRight.getOFFactory().actions().buildOutput();
+		actions = new ArrayList<OFAction>();
+
+		//podmieniam adres docelowy
+		OFActionSetNwSrc.Builder nsrc = swRight.getOFFactory().actions().buildSetNwSrc();
+		nsrc.setNwAddr(IPv4Address.of(MAIN_ADDR));
+		actions.add(nsrc.build());
+
+		//podmieniam MAC docelowy
+		OFActionSetDlSrc.Builder dlsrc = swRight.getOFFactory().actions().buildSetDlSrc();
+		dlsrc.setDlAddr(MacAddress.of("00:00:00:00:00:04"));//switch przy oficjalnym serverze
+		actions.add(dlsrc.build());
+
+		// przekazuje na port 1
+		aob.setPort(OFPort.of(1));
+		aob.setMaxLen(Integer.MAX_VALUE);
+		actions.add(aob.build());
+
+		fmb.setMatch(m).setIdleTimeout(FLOWMOD_DEFAULT_IDLE_TIMEOUT).setHardTimeout(FLOWMOD_DEFAULT_HARD_TIMEOUT)
+		.setBufferId(OFBufferId.NO_BUFFER).setOutPort(OFPort.of(1)).setPriority(FLOWMOD_DEFAULT_PRIORITY);
+		fmb.setActions(actions);
+		// write flow to switch
+
+		try {
+			swRight.write(fmb.build());
+			logger.info("Flow from port {} forwarded to port {}; match: {}",
+					new Object[] { pin.getInPort().getPortNumber(), OFPort.of(1).getPortNumber(), m.toString() });
 		} catch (Exception e) {
 			logger.error("error {}", e);
 		}
