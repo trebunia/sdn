@@ -13,9 +13,6 @@ import subprocess
 import os.path
 import signal
 
-
-ControllerIP='192.168.56.1'
-
 class TopoSDN(Topo):
     def build(self):
 	hosts = [ self.addHost( h ) for h in 'h1', 'h2', 'h3' ]
@@ -56,7 +53,7 @@ def gentraffic(self, line):
         src = randint(0,len(hips)-1)
         timeout = randint(1,60)
         bandwidth = randint(100, 50000)
-        hips[src].cmd('timeout -s KILL {} wget --limit-rate={}K {}/file -O - > /dev/null &'.format(timeout, bandwidth, sips[dst].IP()) )
+        hips[src].cmd('timeout -s KILL {} wget --limit-rate={}K 10.0.0.4/file -O - > /dev/null &'.format(timeout, bandwidth) )
         print "creating flow from {} to {} - bandwidth {}, timeout {}".format(hips[src].IP(), sips[dst].IP(), bandwidth,timeout)
 
 
