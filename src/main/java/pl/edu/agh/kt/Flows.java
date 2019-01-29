@@ -101,20 +101,20 @@ public class Flows {
 			ipv4.setDestinationAddress(serverIPAddr);
 			eth.setDestinationMACAddress(serverMac);
 
-			// 		
+			//
 			// 	// IP
 			// 		IPv4 l3	= new IPv4();
 			// 		l3.setSourceAddress(IPv4Address.of("192.168.1.1"));
 			// 		l3.setDestinationAddress(IPv4Address.of("192.168.1.255"));
 			// 		l3.setTtl((byte) 64);
 			// 		l3.setProtocol(IpProtocol.TCP);
-			// 		
+			//
 			// 	// UDP
 			// 		TCP	l4 = new TCP();
 			// 		//l4.setSourcePort(TransportPort.of(65003));
 			// 		//l4.setDestinationPort(TransportPort.of(53));
-			// 		
-			// 	// serializacja	
+			//
+			// 	// serializacja
 			eth.setPayload(ipv4);
 
 			byte []	serializedData = eth.serialize();
@@ -240,7 +240,7 @@ public class Flows {
 
 		//4. Switch PRAWY -> Host
 		mb = swRight.getOFFactory().buildMatch();
-		mb.setExact(MatchField.IN_PORT, OFPort.of(innerPortTowardsRightSwitch));
+		mb.setExact(MatchField.IN_PORT, OFPort.of(innerPortTowardsLeftSwitch));
 		mb.setExact(MatchField.IPV4_DST, IPv4Address.of(serverIPAddr));
 		mb.setExact(MatchField.TCP_SRC, TransportPort.of(serverPort));
 		mb.setExact(MatchField.IPV4_DST, IPv4Address.of(hostIPAddr));

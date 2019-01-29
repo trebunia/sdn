@@ -99,6 +99,7 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 				logger.error("Packet_in not expected on port: {}, sending on port 4", pin.getInPort()); //suppress
 				Flows.simpleAdd(sw, pin, cntx, OFPort.of(4));
 			}
+			return Command.CONTINUE;
 		}
 		else if (sw.getId().toString().equals("00:00:00:00:00:00:00:04") || sw.getId().toString().equals("00:00:00:00:00:00:00:05") || sw.getId().toString().equals("00:00:00:00:00:00:00:06")) {
 
@@ -107,6 +108,8 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 				extractor.packetExtract(cntx);
 				String hostIPAddr = extractor.getSrcIPAddress();
 				int hostPort = extractor.getSrcTcpPort();
+
+				if (hostPort == 0) return Command.CONTINUE;
 
 				logger.info("calculating destination server for new flow"); //suppress
 				int index = this.CalculateDestinationServerIndex();
@@ -122,7 +125,7 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 				Flows.addEtriesForAllNeededSwitchesForFLow(swRight, swLeft, pin, cntx, OFPort.of(1), serverIPAddr[index], serverPort[index], hostIPAddr, hostPort, innerPortTowardsRightSwitch, innerPortTowardsLeftSwitch, serverMacTable[index]);
 			}
 		}
-		return Command.CONTINUE;
+		return Command.STOP;
 	}
 
 	public int CalculateDestinationServerIndex() {
