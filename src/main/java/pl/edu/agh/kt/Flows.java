@@ -90,7 +90,7 @@ public class Flows {
 		}
 	}
 
-	public static void addEtriesForAllNeededSwitchesForFLow(IOFSwitch swRight, IOFSwitch swLeft, OFPacketIn pin, FloodlightContext cntx, OFPort outPort, String serverIPAddr, int serverPort, String hostIPAddr, int hostPort, String serverMac) {
+	public static void addEtriesForAllNeededSwitchesForFLow(IOFSwitch swRight, IOFSwitch swLeft, IOFSwitch swCentre, OFPacketIn pin, FloodlightContext cntx, OFPort outPort, String serverIPAddr, int serverPort, String hostIPAddr, int hostPort, String serverMac, int innerPortTowardsLeftSwitch, int innerPortTowardsRightSwitch) {
 
 		// packetOut
 
@@ -101,20 +101,6 @@ public class Flows {
 			ipv4.setDestinationAddress(serverIPAddr);
 			eth.setDestinationMACAddress(serverMac);
 
-			//
-			// 	// IP
-			// 		IPv4 l3	= new IPv4();
-			// 		l3.setSourceAddress(IPv4Address.of("192.168.1.1"));
-			// 		l3.setDestinationAddress(IPv4Address.of("192.168.1.255"));
-			// 		l3.setTtl((byte) 64);
-			// 		l3.setProtocol(IpProtocol.TCP);
-			//
-			// 	// UDP
-			// 		TCP	l4 = new TCP();
-			// 		//l4.setSourcePort(TransportPort.of(65003));
-			// 		//l4.setDestinationPort(TransportPort.of(53));
-			//
-			// 	// serializacja
 			eth.setPayload(ipv4);
 
 			byte []	serializedData = eth.serialize();
@@ -129,7 +115,7 @@ public class Flows {
 
 
 
-		//1. Switch PRAWY -> Switch LEWY
+		//1. Switch PRAWY -> Switch Centralny
 		// FlowModBuilder
 		OFFlowMod.Builder fmb = swRight.getOFFactory().buildFlowAdd();
 		// match
@@ -278,7 +264,74 @@ public class Flows {
 		} catch (Exception e) {
 			logger.error("error {}", e);
 		}
+
+
+	//7. Switch Centralny -> Switch LEWY
+	// FlowModBuilder
+	fmb = swCentre.getOFFactory().buildFlowAdd();
+	// match
+	mb = swCentre.getOFFactory().buildMatch();
+	mb.setExact(MatchField.IN_PORT, OFPort.of(innerPortTowardsRightSwitch));
+	mb.setExact(MatchField.IPV4_SRC, IPv4Address.of(hostIPAddr));
+	mb.setExact(MatchField.TCP_SRC, TransportPort.of(hostPort));
+	mb.setExact(MatchField.IPV4_DST, IPv4Address.of(serverIPAddr));
+	mb.setExact(MatchField.TCP_DST, TransportPort.of(serverPort));
+	m = mb.build();
+
+	// actions
+	aob = swCentre.getOFFactory().actions().buildOutput();
+	actions = new ArrayList<OFAction>();
+	// przekazuje na port 2
+	aob.setPort(OFPort.of(innerPortTowardsLeftSwitch));
+	aob.setMaxLen(Integer.MAX_VALUE);
+	actions.add(aob.build());
+
+	fmb.setMatch(m).setIdleTimeout(FLOWMOD_DEFAULT_IDLE_TIMEOUT).setHardTimeout(FLOWMOD_DEFAULT_HARD_TIMEOUT)
+	.setBufferId(pin.getBufferId()).setOutPort(OFPort.of(innerPortTowardsLeftSwitch)).setPriority(FLOWMOD_DEFAULT_PRIORITY);
+	fmb.setActions(actions);
+	// write flow to switch
+
+	try {
+		swCentre.write(fmb.build());
+		logger.info("Flow from port {} forwarded to port {}; match: {}",
+				new Object[] { pin.getInPort().getPortNumber(), OFPort.of(innerPortTowardsLeftSwitch).getPortNumber(), m.toString() });
+	} catch (Exception e) {
+		logger.error("error {}", e);
 	}
+
+	//8. Switch Centralny -> Switch PRAWY
+	// FlowModBuilder
+	fmb = swCentre.getOFFactory().buildFlowAdd();
+	// match
+	mb = swCentre.getOFFactory().buildMatch();
+	mb.setExact(MatchField.IN_PORT, OFPort.of(innerPortTowardsLeftSwitch));
+	mb.setExact(MatchField.IPV4_SRC, IPv4Address.of(serverIPAddr));
+	mb.setExact(MatchField.TCP_SRC, TransportPort.of(serverPort));
+	mb.setExact(MatchField.IPV4_DST, IPv4Address.of(hostIPAddr));
+	mb.setExact(MatchField.TCP_DST, TransportPort.of(hostPort));
+	m = mb.build();
+
+	// actions
+	aob = swCentre.getOFFactory().actions().buildOutput();
+	actions = new ArrayList<OFAction>();
+	// przekazuje na port 2
+	aob.setPort(OFPort.of(innerPortTowardsRightSwitch));
+	aob.setMaxLen(Integer.MAX_VALUE);
+	actions.add(aob.build());
+
+	fmb.setMatch(m).setIdleTimeout(FLOWMOD_DEFAULT_IDLE_TIMEOUT).setHardTimeout(FLOWMOD_DEFAULT_HARD_TIMEOUT)
+	.setBufferId(pin.getBufferId()).setOutPort(OFPort.of(innerPortTowardsRightSwitch)).setPriority(FLOWMOD_DEFAULT_PRIORITY);
+	fmb.setActions(actions);
+	// write flow to switch
+
+	try {
+		swCentre.write(fmb.build());
+		logger.info("Flow from port {} forwarded to port {}; match: {}",
+				new Object[] { pin.getInPort().getPortNumber(), OFPort.of(innerPortTowardsRightSwitch).getPortNumber(), m.toString() });
+	} catch (Exception e) {
+		logger.error("error {}", e);
+	}
+}
 
 	public static Match createMatchFromPacket(IOFSwitch sw, OFPort inPort, FloodlightContext cntx) {
 		// The packet in match will only contain the port number.

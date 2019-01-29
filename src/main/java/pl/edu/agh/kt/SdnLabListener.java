@@ -9,6 +9,8 @@ import org.projectfloodlight.openflow.protocol.OFPacketIn;
 import org.projectfloodlight.openflow.protocol.OFType;
 import org.projectfloodlight.openflow.types.OFPort;
 import org.projectfloodlight.openflow.types.DatapathId;
+import org.projectfloodlight.openflow.types.EthType;
+import org.projectfloodlight.openflow.types.IpProtocol;
 
 import net.floodlightcontroller.core.FloodlightContext;
 import net.floodlightcontroller.core.IOFMessageListener;
@@ -20,6 +22,12 @@ import net.floodlightcontroller.core.module.IFloodlightService;
 import net.floodlightcontroller.core.IFloodlightProviderService;
 import net.floodlightcontroller.core.internal.IOFSwitchService;
 
+import net.floodlightcontroller.packet.ARP;
+import net.floodlightcontroller.packet.Ethernet;
+import net.floodlightcontroller.packet.IPv4;
+import net.floodlightcontroller.packet.TCP;
+import net.floodlightcontroller.packet.UDP;
+import net.floodlightcontroller.packet.ICMP;
 import java.util.ArrayList;
 
 import org.slf4j.Logger;
@@ -72,35 +80,51 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 
 			return Command.CONTINUE;
 		}
-		else if (sw.getId().toString().equals("00:00:00:00:00:00:00:07")) {
-			return Command.CONTINUE;
-		}
+		// else if (sw.getId().toString().equals("00:00:00:00:00:00:00:07")) {
+		// 	return Command.CONTINUE;
+		// }
 		else if (sw.getId().toString().equals("00:00:00:00:00:00:00:04") || sw.getId().toString().equals("00:00:00:00:00:00:00:05") || sw.getId().toString().equals("00:00:00:00:00:00:00:06")) {
 
 			if (pin.getInPort() == OFPort.of(1)) {//action for other ports already satisfied in this 'if'
-				PacketExtractor extractor = new PacketExtractor();
-				extractor.packetExtract(cntx);
-				String hostIPAddr = extractor.getSrcIPAddress();
-				int hostPort = extractor.getSrcTcpPort();
+				Ethernet eth;
+				IPv4 ipv4;
+				TCP tcp;
 
-				if (hostPort == 0) return Command.CONTINUE;
+				eth = IFloodlightProviderService.bcStore.get(cntx, IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
+
+				if (eth.getEtherType() == EthType.IPv4) {
+					ipv4 = (IPv4) eth.getPayload();
+
+					if (ipv4.getProtocol() == IpProtocol.TCP) {
+						tcp = (TCP) ipv4.getPayload();
+					}
+					else return Command.CONTINUE;
+				}
+				else return Command.CONTINUE;
+
+				// PacketExtractor extractor = new PacketExtractor();
+				// extractor.packetExtract(cntx);
+				// String hostIPAddr = extractor.getSrcIPAddress();
+				// int hostPort = extractor.getSrcTcpPort();
+				// if (hostPort == 0) return Command.CONTINUE;
+				String hostIPAddr = ipv4.getSourceAddress().toString();
+				int hostPort = tcp.getSourcePort().getPort();
 
 				logger.info("calculating destination server for new flow"); //suppress
 				int index = this.CalculateDestinationServerIndex();
-				// int innerPortTowardsLeftSwitch = index + 2;// interfejs na lewym switchu (2,3 lub 4)
-				// int innerPortTowardsRightSwitch = 0;
-				// if (sw.getId().toString().equals("00:00:00:00:00:00:00:04")) innerPortTowardsRightSwitch = 2;//interfejs na prawym switchu
-				// if (sw.getId().toString().equals("00:00:00:00:00:00:00:05")) innerPortTowardsRightSwitch = 3;
-				// if (sw.getId().toString().equals("00:00:00:00:00:00:00:06")) innerPortTowardsRightSwitch = 4;
+				int innerPortTowardsLeftSwitch = index + 1;// interfejs na lewym switchu (2,3 lub 4)
+				int innerPortTowardsRightSwitch = 0;
+				if (sw.getId().toString().equals("00:00:00:00:00:00:00:04")) innerPortTowardsRightSwitch = 4;//interfejs na prawym switchu
+				if (sw.getId().toString().equals("00:00:00:00:00:00:00:05")) innerPortTowardsRightSwitch = 5;
+				if (sw.getId().toString().equals("00:00:00:00:00:00:00:06")) innerPortTowardsRightSwitch = 6;
 
 				IOFSwitch swRight = sw;
 				IOFSwitch swLeft = switchService.getSwitch(DatapathId.of(leftSwitchMac[index])); //switch od serwera, który został wybrany dla tego flowu
+				IOFSwitch swCentre = switchService.getSwitch(DatapathId.of("00:00:00:00:00:00:00:07"));
+				Flows.addEtriesForAllNeededSwitchesForFLow(swRight, swLeft, swCentre, pin, cntx, OFPort.of(1), serverIPAddr[index], serverPort[index], hostIPAddr, hostPort, serverMacTable[index], innerPortTowardsLeftSwitch, innerPortTowardsRightSwitch);
+			} else return Command.CONTINUE;
+		} else return Command.CONTINUE;
 
-				Flows.addEtriesForAllNeededSwitchesForFLow(swRight, swLeft, pin, cntx, OFPort.of(1), serverIPAddr[index], serverPort[index], hostIPAddr, hostPort, serverMacTable[index]);
-			} else if( pin.getInPort() == OFPort.of(2)) {
-				return Command.CONTINUE;		
-			}
-		}
 		return Command.STOP;
 	}
 
