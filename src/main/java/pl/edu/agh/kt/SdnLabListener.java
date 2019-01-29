@@ -62,28 +62,6 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 
 		logger.info("************* NEW PACKET IN *************");
 
-		// try {
-			// if (switchService.getSwitch(DatapathId.of("00:00:00:00:00:00:00:03")) != null) {
-			// 	logger.warn("@@@@@@@@@@@@@@@@@@@2");
-			// }
-			// IOFSwitch sw1 = switchService.getSwitch(DatapathId.of(sw.getId().toString()));
-
-			// for (DatapathId id : switchService.getAllSwitchDpids()) {
-			// 	logger.warn("id: {}", id.toString());
-			// }
-			// if (switchService.getAllSwitchDpids().contains(DatapathId.of("00:00:00:00:00:00:00:03"))) {
-			// 	logger.warn("Zawiera");
-			// } else {
-			// 	logger.warn("NIE zawiera");
-			// }
-			//
-			// logger.warn("słicz 3: {}", switchService.getSwitch(DatapathId.of("00:00:00:00:00:00:00:03")));
-			// logger.warn("_____________________________________________________________________");
-
-		// } catch (Exception ex) {
-		// 	logger.error("MWMWMWMWMWMWMWMWMWMWMWOWOOOOOOOOOOOOOOOOOOLLLLLLLLLLLLLLLLIIIIIIIIIIIIIIIIAAAAAAAAAAAAAAAAQWEWETTRYTYUOUOUOUOUOUOUOUUOUOUOUOUOIOOIOIOIOIOIOIOIOIOIOIOIOIOIIOIOIOOIOIIOIOIOIOIOIOIOIOIOIOIOXOXOXOXOXOXOXOXOXOXOXOXOXOOXOXOXOXOXOXOXOX", ex);
-		// }
-
 		OFPacketIn pin = (OFPacketIn) msg;
 
 		logger.info("Switch id: {}", sw.getId().toString());
@@ -91,14 +69,7 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 
 		if (sw.getId().toString().equals("00:00:00:00:00:00:00:01") || sw.getId().toString().equals("00:00:00:00:00:00:00:02") || sw.getId().toString().equals("00:00:00:00:00:00:00:03")) {
 			StatisticsCollector.getInstance(sw);
-			//
-			// if (pin.getInPort() == OFPort.of(4) || pin.getInPort() == OFPort.of(5) || pin.getInPort() == OFPort.of(6)) {
-		 	// 	Flows.simpleAdd(sw, pin, cntx, OFPort.of(1));
-		 	// }
-			// else if(pin.getInPort() == OFPort.of(1)) {
-			// 	logger.error("Packet_in not expected on port: {}, sending on port 4", pin.getInPort()); //suppress
-			// 	Flows.simpleAdd(sw, pin, cntx, OFPort.of(4));
-			// }
+
 			return Command.CONTINUE;
 		}
 		else if (sw.getId().toString().equals("00:00:00:00:00:00:00:07")) {
@@ -126,6 +97,8 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 				IOFSwitch swLeft = switchService.getSwitch(DatapathId.of(leftSwitchMac[index])); //switch od serwera, który został wybrany dla tego flowu
 
 				Flows.addEtriesForAllNeededSwitchesForFLow(swRight, swLeft, pin, cntx, OFPort.of(1), serverIPAddr[index], serverPort[index], hostIPAddr, hostPort, serverMacTable[index]);
+			} else if( pin.getInPort() == OFPort.of(2)) {
+				return Command.CONTINUE;		
 			}
 		}
 		return Command.STOP;
