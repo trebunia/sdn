@@ -41,7 +41,7 @@ public class Flows {
 
 	private static final Logger logger = LoggerFactory.getLogger(Flows.class);
 
-	public static short FLOWMOD_DEFAULT_IDLE_TIMEOUT = 5; // in seconds
+	public static short FLOWMOD_DEFAULT_IDLE_TIMEOUT = 40; // in seconds
 	public static short FLOWMOD_DEFAULT_HARD_TIMEOUT = 0; // infinite
 	public static short FLOWMOD_DEFAULT_PRIORITY = 100;
 
@@ -120,11 +120,13 @@ public class Flows {
 		OFFlowMod.Builder fmb = swRight.getOFFactory().buildFlowAdd();
 		// match
 		Match.Builder mb = swRight.getOFFactory().buildMatch();
-		mb.setExact(MatchField.IN_PORT, OFPort.of(1));
+		mb.setExact(MatchField.ETH_TYPE, EthType.IPv4);
+		mb.setExact(MatchField.IP_PROTO, IpProtocol.TCP);
 		mb.setExact(MatchField.IPV4_SRC, IPv4Address.of(hostIPAddr));
 		mb.setExact(MatchField.TCP_SRC, TransportPort.of(hostPort));
 		mb.setExact(MatchField.IPV4_DST, IPv4Address.of(MAIN_ADDR));
 		mb.setExact(MatchField.TCP_DST, TransportPort.of(80));
+		mb.setExact(MatchField.IN_PORT, OFPort.of(1));
 		Match m = mb.build();
 
 		// actions
@@ -162,11 +164,13 @@ public class Flows {
 
 		//2. Switch LEWY -> server
 		mb = swLeft.getOFFactory().buildMatch();
-		mb.setExact(MatchField.IN_PORT, OFPort.of(2));
+		mb.setExact(MatchField.ETH_TYPE, EthType.IPv4);
+		mb.setExact(MatchField.IP_PROTO, IpProtocol.TCP);
 		mb.setExact(MatchField.IPV4_SRC, IPv4Address.of(hostIPAddr));
 		mb.setExact(MatchField.TCP_SRC, TransportPort.of(hostPort));
 		mb.setExact(MatchField.IPV4_DST, IPv4Address.of(serverIPAddr));
 		mb.setExact(MatchField.TCP_DST, TransportPort.of(serverPort));
+		mb.setExact(MatchField.IN_PORT, OFPort.of(2));
 		m = mb.build();
 
 		// actions
@@ -192,13 +196,15 @@ public class Flows {
 		}
 
 
-		//3. Switch LEWY -> Switch PRAWY
+		//3. Switch LEWY -> Switch Centralny
 		mb = swLeft.getOFFactory().buildMatch();
-		mb.setExact(MatchField.IN_PORT, OFPort.of(1));
+		mb.setExact(MatchField.ETH_TYPE, EthType.IPv4);
+		mb.setExact(MatchField.IP_PROTO, IpProtocol.TCP);
 		mb.setExact(MatchField.IPV4_SRC, IPv4Address.of(serverIPAddr));
 		mb.setExact(MatchField.TCP_SRC, TransportPort.of(serverPort));
 		mb.setExact(MatchField.IPV4_DST, IPv4Address.of(hostIPAddr));
 		mb.setExact(MatchField.TCP_DST, TransportPort.of(hostPort));
+		mb.setExact(MatchField.IN_PORT, OFPort.of(1));
 		m = mb.build();
 
 		// actions
@@ -226,11 +232,13 @@ public class Flows {
 
 		//4. Switch PRAWY -> Host
 		mb = swRight.getOFFactory().buildMatch();
-		mb.setExact(MatchField.IN_PORT, OFPort.of(2));
-		mb.setExact(MatchField.IPV4_DST, IPv4Address.of(serverIPAddr));
+		mb.setExact(MatchField.ETH_TYPE, EthType.IPv4);
+		mb.setExact(MatchField.IP_PROTO, IpProtocol.TCP);
+		mb.setExact(MatchField.IPV4_SRC, IPv4Address.of(serverIPAddr));
 		mb.setExact(MatchField.TCP_SRC, TransportPort.of(serverPort));
 		mb.setExact(MatchField.IPV4_DST, IPv4Address.of(hostIPAddr));
 		mb.setExact(MatchField.TCP_DST, TransportPort.of(hostPort));
+		mb.setExact(MatchField.IN_PORT, OFPort.of(2));
 		m = mb.build();
 
 		// actions
@@ -271,11 +279,13 @@ public class Flows {
 	fmb = swCentre.getOFFactory().buildFlowAdd();
 	// match
 	mb = swCentre.getOFFactory().buildMatch();
-	mb.setExact(MatchField.IN_PORT, OFPort.of(innerPortTowardsRightSwitch));
+	mb.setExact(MatchField.ETH_TYPE, EthType.IPv4);
+	mb.setExact(MatchField.IP_PROTO, IpProtocol.TCP);
 	mb.setExact(MatchField.IPV4_SRC, IPv4Address.of(hostIPAddr));
 	mb.setExact(MatchField.TCP_SRC, TransportPort.of(hostPort));
 	mb.setExact(MatchField.IPV4_DST, IPv4Address.of(serverIPAddr));
 	mb.setExact(MatchField.TCP_DST, TransportPort.of(serverPort));
+	mb.setExact(MatchField.IN_PORT, OFPort.of(innerPortTowardsRightSwitch));
 	m = mb.build();
 
 	// actions
@@ -304,11 +314,13 @@ public class Flows {
 	fmb = swCentre.getOFFactory().buildFlowAdd();
 	// match
 	mb = swCentre.getOFFactory().buildMatch();
-	mb.setExact(MatchField.IN_PORT, OFPort.of(innerPortTowardsLeftSwitch));
+	mb.setExact(MatchField.ETH_TYPE, EthType.IPv4);
+	mb.setExact(MatchField.IP_PROTO, IpProtocol.TCP);
 	mb.setExact(MatchField.IPV4_SRC, IPv4Address.of(serverIPAddr));
 	mb.setExact(MatchField.TCP_SRC, TransportPort.of(serverPort));
 	mb.setExact(MatchField.IPV4_DST, IPv4Address.of(hostIPAddr));
 	mb.setExact(MatchField.TCP_DST, TransportPort.of(hostPort));
+	mb.setExact(MatchField.IN_PORT, OFPort.of(innerPortTowardsLeftSwitch));
 	m = mb.build();
 
 	// actions
