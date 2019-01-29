@@ -32,7 +32,7 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 	private static String[] serverMacTable = new String[] {"00:00:00:00:00:04","00:00:00:00:00:05","00:00:00:00:00:06"};
 	private static int[] serverPort = new int[] {80,80,80};
 	//private static String[] hostIPTable = new String[] {"10.0.0.1","10.0.0.2","10.0.0.3"};
-	private static double[] thresholds = new double[] {0.2,0.3,0.5};
+	private static double[] thresholds = new double[] {0.0,0.0,1};
 
 	protected IFloodlightProviderService floodlightProvider;
 	protected static Logger logger;
@@ -62,7 +62,7 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 
 		logger.info("************* NEW PACKET IN *************");
 
-		try {
+		// try {
 			// if (switchService.getSwitch(DatapathId.of("00:00:00:00:00:00:00:03")) != null) {
 			// 	logger.warn("@@@@@@@@@@@@@@@@@@@2");
 			// }
@@ -80,9 +80,9 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 			// logger.warn("słicz 3: {}", switchService.getSwitch(DatapathId.of("00:00:00:00:00:00:00:03")));
 			// logger.warn("_____________________________________________________________________");
 
-		} catch (Exception ex) {
-			logger.error("MWMWMWMWMWMWMWMWMWMWMWOWOOOOOOOOOOOOOOOOOOLLLLLLLLLLLLLLLLIIIIIIIIIIIIIIIIAAAAAAAAAAAAAAAAQWEWETTRYTYUOUOUOUOUOUOUOUUOUOUOUOUOIOOIOIOIOIOIOIOIOIOIOIOIOIOIIOIOIOOIOIIOIOIOIOIOIOIOIOIOIOIOXOXOXOXOXOXOXOXOXOXOXOXOXOOXOXOXOXOXOXOXOX", ex);
-		}
+		// } catch (Exception ex) {
+		// 	logger.error("MWMWMWMWMWMWMWMWMWMWMWOWOOOOOOOOOOOOOOOOOOLLLLLLLLLLLLLLLLIIIIIIIIIIIIIIIIAAAAAAAAAAAAAAAAQWEWETTRYTYUOUOUOUOUOUOUOUUOUOUOUOUOIOOIOIOIOIOIOIOIOIOIOIOIOIOIIOIOIOOIOIIOIOIOIOIOIOIOIOIOIOIOXOXOXOXOXOXOXOXOXOXOXOXOXOOXOXOXOXOXOXOXOX", ex);
+		// }
 
 		OFPacketIn pin = (OFPacketIn) msg;
 
@@ -91,14 +91,17 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 
 		if (sw.getId().toString().equals("00:00:00:00:00:00:00:01") || sw.getId().toString().equals("00:00:00:00:00:00:00:02") || sw.getId().toString().equals("00:00:00:00:00:00:00:03")) {
 			StatisticsCollector.getInstance(sw);
-
-			if (pin.getInPort() == OFPort.of(4) || pin.getInPort() == OFPort.of(5) || pin.getInPort() == OFPort.of(6)) {
-		 		Flows.simpleAdd(sw, pin, cntx, OFPort.of(1));
-		 	}
-			else if(pin.getInPort() == OFPort.of(1)) {
-				logger.error("Packet_in not expected on port: {}, sending on port 4", pin.getInPort()); //suppress
-				Flows.simpleAdd(sw, pin, cntx, OFPort.of(4));
-			}
+			//
+			// if (pin.getInPort() == OFPort.of(4) || pin.getInPort() == OFPort.of(5) || pin.getInPort() == OFPort.of(6)) {
+		 	// 	Flows.simpleAdd(sw, pin, cntx, OFPort.of(1));
+		 	// }
+			// else if(pin.getInPort() == OFPort.of(1)) {
+			// 	logger.error("Packet_in not expected on port: {}, sending on port 4", pin.getInPort()); //suppress
+			// 	Flows.simpleAdd(sw, pin, cntx, OFPort.of(4));
+			// }
+			return Command.CONTINUE;
+		}
+		else if (sw.getId().toString().equals("00:00:00:00:00:00:00:07")) {
 			return Command.CONTINUE;
 		}
 		else if (sw.getId().toString().equals("00:00:00:00:00:00:00:04") || sw.getId().toString().equals("00:00:00:00:00:00:00:05") || sw.getId().toString().equals("00:00:00:00:00:00:00:06")) {
@@ -113,16 +116,16 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 
 				logger.info("calculating destination server for new flow"); //suppress
 				int index = this.CalculateDestinationServerIndex();
-				int innerPortTowardsLeftSwitch = index + 2;// interfejs na lewym switchu (2,3 lub 4)
-				int innerPortTowardsRightSwitch = 0;
-				if (sw.getId().toString().equals("00:00:00:00:00:00:00:04")) innerPortTowardsRightSwitch = 2;//interfejs na prawym switchu
-				if (sw.getId().toString().equals("00:00:00:00:00:00:00:05")) innerPortTowardsRightSwitch = 3;
-				if (sw.getId().toString().equals("00:00:00:00:00:00:00:06")) innerPortTowardsRightSwitch = 4;
+				// int innerPortTowardsLeftSwitch = index + 2;// interfejs na lewym switchu (2,3 lub 4)
+				// int innerPortTowardsRightSwitch = 0;
+				// if (sw.getId().toString().equals("00:00:00:00:00:00:00:04")) innerPortTowardsRightSwitch = 2;//interfejs na prawym switchu
+				// if (sw.getId().toString().equals("00:00:00:00:00:00:00:05")) innerPortTowardsRightSwitch = 3;
+				// if (sw.getId().toString().equals("00:00:00:00:00:00:00:06")) innerPortTowardsRightSwitch = 4;
 
 				IOFSwitch swRight = sw;
 				IOFSwitch swLeft = switchService.getSwitch(DatapathId.of(leftSwitchMac[index])); //switch od serwera, który został wybrany dla tego flowu
 
-				Flows.addEtriesForAllNeededSwitchesForFLow(swRight, swLeft, pin, cntx, OFPort.of(1), serverIPAddr[index], serverPort[index], hostIPAddr, hostPort, innerPortTowardsRightSwitch, innerPortTowardsLeftSwitch, serverMacTable[index]);
+				Flows.addEtriesForAllNeededSwitchesForFLow(swRight, swLeft, pin, cntx, OFPort.of(1), serverIPAddr[index], serverPort[index], hostIPAddr, hostPort, serverMacTable[index]);
 			}
 		}
 		return Command.STOP;
