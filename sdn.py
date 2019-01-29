@@ -17,7 +17,7 @@ class TopoSDN(Topo):
     def build(self):
 	hosts = [ self.addHost( h ) for h in 'h1', 'h2', 'h3' ]
 	servers = [ self.addHost ( sv ) for sv in 'sv1', 'sv2', 'sv3' ]
-	switches = [ self.addSwitch( s ) for s in 's1', 's2', 's3', 's4', 's5', 's6' ]
+	switches = [ self.addSwitch( s ) for s in 's1', 's2', 's3', 's4', 's5', 's6', 's7' ]
         
 	# Add links
 	# links hosts - switches
@@ -31,17 +31,13 @@ class TopoSDN(Topo):
 	self.addLink(servers[2], switches[2])
 	
 	# links between switches
-	self.addLink(switches[0], switches[3])
-	self.addLink(switches[0], switches[4])
-	self.addLink(switches[0], switches[5])
-	
-	self.addLink(switches[1], switches[3])
-	self.addLink(switches[1], switches[4])
-	self.addLink(switches[1], switches[5])
-	
-	self.addLink(switches[2], switches[3])
-	self.addLink(switches[2], switches[4])
-	self.addLink(switches[2], switches[5])
+	self.addLink(switches[0], switches[6])
+	self.addLink(switches[1], switches[6])
+	self.addLink(switches[2], switches[6])
+	self.addLink(switches[3], switches[6])
+	self.addLink(switches[4], switches[6])
+	self.addLink(switches[5], switches[6])
+
 
 def gentraffic(self, line):
     "generate random http traffic\nUsage: gentraffic [number_of_flows]"
