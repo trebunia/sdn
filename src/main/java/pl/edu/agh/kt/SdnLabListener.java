@@ -40,7 +40,7 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 	private static String[] serverMacTable = new String[] {"00:00:00:00:00:04","00:00:00:00:00:05","00:00:00:00:00:06"};
 	private static int[] serverPort = new int[] {80,80,80};
 	//private static String[] hostIPTable = new String[] {"10.0.0.1","10.0.0.2","10.0.0.3"};
-	private static double[] thresholds = new double[] {0.0,0.0,1};
+	private static double[] thresholds = new double[] {0.0,0.5,0.5};
 
 	protected IFloodlightProviderService floodlightProvider;
 	protected static Logger logger;
@@ -112,8 +112,9 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 
 				logger.info("calculating destination server for new flow"); //suppress
 				int index = this.CalculateDestinationServerIndex();
-				int innerPortTowardsLeftSwitch = index + 1;// interfejs na lewym switchu (2,3 lub 4)
+				int innerPortTowardsLeftSwitch = index + 1;// interfejs na lewym switchu (1,2 lub 3)
 				int innerPortTowardsRightSwitch = 0;
+				logger.info("Chosen serwer: {}", innerPortTowardsLeftSwitch); //suppress
 				if (sw.getId().toString().equals("00:00:00:00:00:00:00:04")) innerPortTowardsRightSwitch = 4;//interfejs na prawym switchu
 				if (sw.getId().toString().equals("00:00:00:00:00:00:00:05")) innerPortTowardsRightSwitch = 5;
 				if (sw.getId().toString().equals("00:00:00:00:00:00:00:06")) innerPortTowardsRightSwitch = 6;
@@ -134,9 +135,13 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 		double sum = bandwidths[0] + bandwidths[1] + bandwidths[2];
 		if (sum == 0.0) return 2;
 
-		double deficit_0 = 0; //thresholds[0] - bandwidths[0]/sum;
-		double deficit_1 = 0; //thresholds[1] - bandwidths[1]/sum;
-		double deficit_2 = 1;//thresholds[2] - bandwidths[2]/sum;
+		double deficit_0 = thresholds[0] - bandwidths[0]/sum;
+		double deficit_1 = thresholds[1] - bandwidths[1]/sum;
+		double deficit_2 = thresholds[2] - bandwidths[2]/sum;
+
+		// logger.info("Deficit on srv 1: {}", deficit_0); //suppress
+		// logger.info("Deficit on srv 2: {}", deficit_1); //suppress
+		// logger.info("Deficit on srv 3: {}", deficit_2); //suppress
 
 		if (deficit_0 >= deficit_1 && deficit_0 >= deficit_2) index = 0;
 		else if (deficit_1 >= deficit_0 && deficit_1 >= deficit_2) index = 1;
@@ -144,7 +149,7 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 
 		//logger.info("bandwidths - 1: {}, 2: {}, 3: {}", bandwidths[0], bandwidths[1], bandwidths[2]);
 		//logger.info("deficits - 1: {}, 2: {}, 3: {}", deficit_0, deficit_1, deficit_2);
-		logger.info("Chosen index: {}}", index);
+		// logger.info("Chosen index: {}", index);
 
 		return index;
 	}
