@@ -12,3 +12,8 @@ Po ukazaniu sie konsoli mininet mozna wygenerowac ruch poleceniem:
 gentraffic 10
 ```
 To polecenie spowoduje wygenerowanie 10 losowych przeplywow pomiedzy hostami a serwerami o roznej przepustowosci i o roznym czasie trwania.
+
+Można również uruchomić pojedyncze żądanie wget:
+```bash
+h1 wget --limit-rate=4000K 10.0.0.4/file -O - > /dev/null &
+```
